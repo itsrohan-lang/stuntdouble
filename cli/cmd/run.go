@@ -46,6 +46,11 @@ var runCmd = &cobra.Command{
 		} else {
 			dockerArgs = append(dockerArgs, "npx", "-y", agentName)
 		}
+		
+		// Pass any additional arguments directly to the agent
+		if len(args) > 1 {
+			dockerArgs = append(dockerArgs, args[1:]...)
+		}
 
 		execCmd := exec.Command("docker", dockerArgs...)
 		execCmd.Stdin = os.Stdin
