@@ -29,8 +29,14 @@ StuntDouble solves this by acting as the ultimate zero-trust orchestration glue.
 
 ## 🛠 Installation
 
-StuntDouble is officially published to the global NPM registry.
+StuntDouble is written in pure Go and runs completely natively without Node.js dependencies.
 
+**Option 1: Native Installer (Recommended)**
+```bash
+curl -sSL https://raw.githubusercontent.com/itsrohan-lang/stuntdouble/main/install.sh | bash
+```
+
+**Option 2: NPM / NPX**
 ```bash
 npm install -g stuntdouble-sandbox-cli
 # or run without installing:
