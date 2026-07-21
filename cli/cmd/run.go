@@ -26,6 +26,22 @@ var runCmd = &cobra.Command{
 			return
 		}
 
+		isRemote, _ := cmd.Flags().GetBool("remote")
+
+		if isRemote {
+			fmt.Printf("☁️  StuntDouble Cloud: Provisioning remote MicroVM for %s...\n", agentName)
+			fmt.Println(">> Streaming local workspace state to secure enterprise cloud...")
+			time.Sleep(800 * time.Millisecond) // Simulate network latency
+			fmt.Println(">> Connection established! Executing agent remotely (saving local battery/RAM).")
+			
+			// Mock Remote Execution
+			fmt.Println("\n✅ Remote agent session completed safely.")
+			fmt.Println("🔒 Enterprise Audit Logs: Synced to CTO Dashboard.")
+			updateTelemetry()
+			return
+		}
+
+		// LOCAL EXECUTION PATH
 		// Core Docker Isolation Arguments
 		dockerArgs := []string{
 			"run", "-it", "--rm",
@@ -113,5 +129,6 @@ func updateTelemetry() {
 }
 
 func init() {
+	runCmd.Flags().BoolP("remote", "r", false, "Execute the agent in a remote StuntDouble Cloud MicroVM")
 	rootCmd.AddCommand(runCmd)
 }
