@@ -47,8 +47,8 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 6: Multi-Agent Swarm Orchestration
 **Goal:** Sandbox entire teams of interacting AI agents.
-* [ ] Build "StuntNet": A virtualized local network that allows multiple isolated AI agents (e.g., a "QA Agent" and a "Dev Agent") to talk to each other while believing they are on the real internet.
-* [ ] State rewinding: If a swarm messes up a virtual environment, allow the developer to instantly rewind the sandbox state to 5 minutes ago.
+* [x] Build "StuntNet": A virtualized local network that allows multiple isolated AI agents (e.g., a "QA Agent" and a "Dev Agent") to talk to each other while believing they are on the real internet.
+* [x] State rewinding: If a swarm messes up a virtual environment, allow the developer to instantly rewind the sandbox state to 5 minutes ago.
 
 ### Phase 7: Bare-Metal Isolation (StuntOS)
 **Goal:** Move beyond Docker into hardware-level sandboxing.
