@@ -8,11 +8,11 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 1: Foundation & "Panic Mode" (Current)
 **Goal:** Build the basic CLI wrapper and container orchestration. Prove the concept of a "1-click" Docker isolation for a local agent.
-* [ ] Scaffold CLI project structure (Go or Node.js).
-* [ ] Implement `stuntdouble init` to generate `.stuntdouble.yaml`.
-* [ ] Implement `stuntdouble run <agent>` command.
-* [ ] Integrate Docker SDK to dynamically spawn `--cap-drop=ALL` containers and pipe I/O.
-* [ ] Implement strict network firewalls (Panic Mode: default deny egress on DB ports).
+* [x] Scaffold CLI project structure (Go or Node.js).
+* [x] Implement `stuntdouble init` to generate `.stuntdouble.yaml`.
+* [x] Implement `stuntdouble run <agent>` command.
+* [x] Integrate Docker to dynamically spawn `--cap-drop=ALL` containers and pipe I/O.
+* [x] Implement strict network firewalls (Panic Mode: default deny egress on DB ports).
 
 ### Phase 2: The Mocking Engine ("The Stunt")
 **Goal:** Integrate the eBPF/Keploy mocking layer so agents can "succeed" at database operations safely.
