@@ -83,6 +83,15 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		if err == nil {
 			defer term.RestoreTerminal(inFd, state)
 		}
+		
+		// Set initial terminal size so UI components don't collapse to 0x0
+		winSize, err := term.GetWinsize(inFd)
+		if err == nil {
+			sdc.cli.ContainerResize(ctx, resp.ID, container.ResizeOptions{
+				Height: uint(winSize.Height),
+				Width:  uint(winSize.Width),
+			})
+		}
 	}
 
 	// Stream TTY interactively
