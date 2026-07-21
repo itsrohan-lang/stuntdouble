@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	"github.com/moby/term"
 )
 
 // StuntDockerClient wraps the native Docker SDK
@@ -74,6 +75,15 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 
 	fmt.Printf("✅ Agent spawned natively! Container ID: %s\n", resp.ID[:12])
 	
+	// Set the host terminal into raw mode so arrow keys and UI elements pass through cleanly
+	inFd, isTerm := term.GetFdInfo(os.Stdin)
+	if isTerm {
+		state, err := term.SetRawTerminal(inFd)
+		if err == nil {
+			defer term.RestoreTerminal(inFd, state)
+		}
+	}
+
 	// Stream TTY interactively
 	go func() {
 		io.Copy(os.Stdout, attachResp.Reader)
