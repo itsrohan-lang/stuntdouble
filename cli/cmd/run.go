@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stuntdouble/cli/pkg/docker"
 	"github.com/stuntdouble/cli/pkg/ebpf"
+	"github.com/stuntdouble/cli/pkg/snapshot"
 )
 
 var runCmd = &cobra.Command{
@@ -59,6 +60,11 @@ var runCmd = &cobra.Command{
 		agentCmd := []string{"sh", "-c", agentCmdStr}
 
 		fmt.Printf(">> Spawning highly restricted Docker container for %s natively...\n", agentName)
+
+		// Capture a zero-copy snapshot of the workspace before the AI touches it
+		if err := snapshot.Create(cwd); err != nil {
+			fmt.Println("⚠️ Failed to create safety snapshot:", err)
+		}
 
 		startTime := time.Now()
 

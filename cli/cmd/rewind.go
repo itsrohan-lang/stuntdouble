@@ -2,24 +2,26 @@ package cmd
 
 import (
 	"fmt"
-	"time"
+	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/stuntdouble/cli/pkg/snapshot"
 )
 
 var rewindCmd = &cobra.Command{
-	Use:   "rewind [minutes]",
+	Use:   "rewind",
 	Short: "Instantly rewinds the workspace state to undo destructive agent actions",
-	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		minutes := args[0]
-		fmt.Printf("⏪ Initiating StuntDouble State Rewind (%s minutes)...\n", minutes)
-		time.Sleep(500 * time.Millisecond)
+		fmt.Println("⏪ Initiating StuntDouble State Rewind...")
 		
-		fmt.Println(">> Halting active agent swarms...")
-		fmt.Println(">> Reverting filesystem from isolated ZFS/Btrfs snapshot layer...")
-		time.Sleep(1000 * time.Millisecond)
+		fmt.Println(">> Reverting filesystem from isolated Git tree snapshot...")
 		
+		workspace, _ := os.Getwd()
+		if err := snapshot.Restore(workspace); err != nil {
+			fmt.Println("❌ Error rewinding workspace:", err)
+			return
+		}
+
 		fmt.Println("\n✅ Workspace successfully restored to previous safe state.")
 		fmt.Println("🛡️  Disaster averted. The AI agents' mistakes have been erased.")
 	},
