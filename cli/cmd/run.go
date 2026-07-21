@@ -60,8 +60,8 @@ var runCmd = &cobra.Command{
 		// By injecting Keploy into the execution flow, we run the agent in "test" mode
 		// so it hits the recorded mocks instead of live databases.
 
-		// MVP: We run the agent wrapped in the Keploy testing environment
-		dockerArgs = append(dockerArgs, "ghcr.io/keploy/keploy:latest", "test", "-c")
+		// MVP: We run the agent wrapped in the StuntDouble testing environment
+		dockerArgs = append(dockerArgs, "node:20-alpine")
 
 		var agentCmd string
 		if agentName == "claude" {

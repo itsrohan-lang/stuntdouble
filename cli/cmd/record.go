@@ -20,13 +20,13 @@ var recordCmd = &cobra.Command{
 		// For the MVP, we simulate wrapping the command in a Keploy record container
 		// In a full implementation, this would invoke Keploy's recording engine.
 		
+		cwd, _ := os.Getwd()
 		recordArgs := []string{
 			"run", "--rm", "-it",
-			"--privileged", // Required for eBPF recording
-			"-v", fmt.Sprintf("%s:/workspace", os.Getenv("PWD")),
+			"-v", fmt.Sprintf("%s:/workspace", cwd),
 			"-w", "/workspace",
-			"ghcr.io/keploy/keploy:latest",
-			"record", "-c", appCommand,
+			"node:20-alpine",
+			"npx", "-y", appCommand,
 		}
 
 		if len(args) > 1 {
