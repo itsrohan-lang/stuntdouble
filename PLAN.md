@@ -38,8 +38,8 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 5: Ecosystem Dominance
 **Goal:** Become the default isolation standard everywhere code is written.
-* [ ] Release native IDE extensions (VS Code, JetBrains, Cursor) so StuntDouble runs invisibly in the background.
-* [ ] Build a Plugin Registry: Allow community developers to write custom eBPF interceptors (e.g., specific mocks for Stripe, AWS, Twilio).
+* [x] Release native IDE extensions (VS Code, JetBrains, Cursor) so StuntDouble runs invisibly in the background.
+* [x] Build a Plugin Registry: Allow community developers to write custom eBPF interceptors (e.g., specific mocks for Stripe, AWS, Twilio).
 
 ---
 
