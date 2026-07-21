@@ -39,18 +39,26 @@ var runCmd = &cobra.Command{
 		}
 
 		// Determine base image and execution command
-		dockerArgs = append(dockerArgs, "node:20-alpine")
+		// By injecting Keploy into the execution flow, we run the agent in "test" mode
+		// so it hits the recorded mocks instead of live databases.
+		
+		// MVP: We run the agent wrapped in the Keploy testing environment
+		dockerArgs = append(dockerArgs, "keploy/keploy:latest", "test", "-c")
 
+		var agentCmd string
 		if agentName == "claude" {
-			dockerArgs = append(dockerArgs, "npx", "-y", "@anthropic-ai/claude-code")
+			agentCmd = "npx -y @anthropic-ai/claude-code"
 		} else {
-			dockerArgs = append(dockerArgs, "npx", "-y", agentName)
+			agentCmd = "npx -y " + agentName
 		}
 		
-		// Pass any additional arguments directly to the agent
 		if len(args) > 1 {
-			dockerArgs = append(dockerArgs, args[1:]...)
+			for _, extraArg := range args[1:] {
+				agentCmd += " " + extraArg
+			}
 		}
+
+		dockerArgs = append(dockerArgs, agentCmd)
 
 		execCmd := exec.Command("docker", dockerArgs...)
 		execCmd.Stdin = os.Stdin
