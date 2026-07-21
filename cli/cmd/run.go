@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/stuntdouble/cli/pkg/docker"
 )
 
 var runCmd = &cobra.Command{
@@ -41,54 +41,34 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		// LOCAL EXECUTION PATH
-		// Core Docker Isolation Arguments
-		dockerArgs := []string{
-			"run", "-it", "--rm",
-			"--cap-drop=ALL",                        // Drop root privileges
-			"-v", fmt.Sprintf("%s:/workspace", cwd), // Mount only current workspace
-			"-w", "/workspace",
-		}
-
-		// Pass necessary API keys into the sandbox securely
-		apiKey := os.Getenv("ANTHROPIC_API_KEY")
-		if apiKey != "" {
-			dockerArgs = append(dockerArgs, "-e", "ANTHROPIC_API_KEY="+apiKey)
-		}
-
-		// Determine base image and execution command
-		// By injecting Keploy into the execution flow, we run the agent in "test" mode
-		// so it hits the recorded mocks instead of live databases.
-
-		// MVP: We run the agent wrapped in the StuntDouble testing environment
-		dockerArgs = append(dockerArgs, "node:20-alpine", "sh", "-c")
-
-		var agentCmd string
+		// LOCAL EXECUTION PATH via Native API
+		var agentCmdStr string
 		if agentName == "claude" {
-			agentCmd = "npx -y @anthropic-ai/claude-code"
+			agentCmdStr = "npx -y @anthropic-ai/claude-code"
 		} else {
-			agentCmd = "npx -y " + agentName
+			agentCmdStr = "npx -y " + agentName
 		}
 
 		if len(args) > 1 {
 			for _, extraArg := range args[1:] {
-				agentCmd += " " + extraArg
+				agentCmdStr += " " + extraArg
 			}
 		}
 
-		dockerArgs = append(dockerArgs, agentCmd)
+		agentCmd := []string{"sh", "-c", agentCmdStr}
 
-		execCmd := exec.Command("docker", dockerArgs...)
-		execCmd.Stdin = os.Stdin
-		execCmd.Stdout = os.Stdout
-		execCmd.Stderr = os.Stderr
-
-		fmt.Printf(">> Spawning highly restricted Docker container for %s...\n", agentName)
+		fmt.Printf(">> Spawning highly restricted Docker container for %s natively...\n", agentName)
 
 		startTime := time.Now()
 
-		if err := execCmd.Run(); err != nil {
-			fmt.Println("\n⚠️ Agent session ended or was terminated.")
+		sdClient, err := docker.NewClient()
+		if err != nil {
+			fmt.Println("❌ Error initializing native Docker client:", err)
+			return
+		}
+
+		if err := sdClient.SpawnIsolatedAgent(cmd.Context(), agentCmd, cwd); err != nil {
+			fmt.Println("\n⚠️ Agent session ended or was terminated:", err)
 		} else {
 			fmt.Println("\n✅ Agent session completed safely.")
 		}

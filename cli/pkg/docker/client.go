@@ -6,8 +6,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
 
@@ -29,7 +29,7 @@ func NewClient() (*StuntDockerClient, error) {
 func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd []string, mountDir string) error {
 	fmt.Println(">> [Native Engine] Pulling node:20-alpine image...")
 	
-	reader, err := sdc.cli.ImagePull(ctx, "docker.io/library/node:20-alpine", types.ImagePullOptions{})
+	reader, err := sdc.cli.ImagePull(ctx, "docker.io/library/node:20-alpine", image.PullOptions{})
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		return err
 	}
 
-	if err := sdc.cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := sdc.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return err
 	}
 
