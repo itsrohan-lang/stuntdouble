@@ -4,8 +4,8 @@
   "description": "Secure AI Agent Sandbox with Docker & eBPF interceptors",
   "main": "bin/stuntdouble.js",
   "bin": {
-    "stuntdouble": "./bin/stuntdouble.js",
-    "sd": "./bin/stuntdouble.js"
+    "stuntdouble": "bin/stuntdouble.js",
+    "sd": "bin/stuntdouble.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
