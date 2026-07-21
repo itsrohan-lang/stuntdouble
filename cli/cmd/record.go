@@ -26,7 +26,7 @@ var recordCmd = &cobra.Command{
 			"-v", fmt.Sprintf("%s:/workspace", cwd),
 			"-w", "/workspace",
 			"node:20-alpine",
-			"npx", "-y", appCommand,
+			"sh", "-c", appCommand,
 		}
 
 		if len(args) > 1 {

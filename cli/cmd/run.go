@@ -61,7 +61,7 @@ var runCmd = &cobra.Command{
 		// so it hits the recorded mocks instead of live databases.
 
 		// MVP: We run the agent wrapped in the StuntDouble testing environment
-		dockerArgs = append(dockerArgs, "node:20-alpine")
+		dockerArgs = append(dockerArgs, "node:20-alpine", "sh", "-c")
 
 		var agentCmd string
 		if agentName == "claude" {
