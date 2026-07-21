@@ -5,7 +5,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/status-in%20development-orange?style=flat-square" alt="Status">
+  <img src="https://img.shields.io/npm/v/stuntdouble-sandbox-cli?color=00f0ff&label=npm" alt="NPM Version">
+  <img src="https://img.shields.io/badge/status-production-8a2be2?style=flat-square" alt="Status">
   <img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License">
 </p>
 
@@ -15,43 +16,56 @@
 
 Autonomous agents (like Claude Code, Cursor, and Opencode) are incredibly powerful, but running them locally comes with extreme anxiety. One bad prompt can lead to deleted databases, leaked AWS keys, or borked system configurations. 
 
-StuntDouble solves this by acting as the ultimate DX (Developer Experience) orchestration glue. With a single command, it:
-1. Wraps your agent in an ephemeral, locked-down Docker microVM.
-2. Injects a powerful eBPF mocking layer (via Keploy).
-3. Intercepts destructive database/network calls and safely mocks them so the agent *thinks* it succeeded, while your host system remains untouched.
+StuntDouble solves this by acting as the ultimate zero-trust orchestration glue. With a single command, it wraps your agent in a locked-down Docker MicroVM, intercepts destructive network calls via eBPF mocks, and governs all execution using the Universal Stunt Protocol (STP).
 
-## 🚀 Features
+## 🚀 Key Features
 
-* **1-Click Safe Mode:** Stop writing manual `docker-compose` wrappers. Just run `sd claude`.
-* **"Panic Mode" Network Blocking:** Automatically block outbound calls to common local databases (Postgres, Mongo) unless explicitly allowed.
-* **The "Stunt" Layer:** Seamlessly record real traffic and mock database responses so agents can run integration tests without destroying data.
+* **1-Click Safe Mode:** Stop writing manual `docker-compose` wrappers. Just run `stuntdouble run claude`.
+* **eBPF Interceptors:** Intercepts destructive database/network calls and safely mocks them so the agent *thinks* it succeeded, while your host system remains untouched.
+* **StuntNet Swarms:** Orchestrate entire teams of agents (`sd swarm qa-agent dev-agent`) inside a virtual intranet isolated from the real web.
+* **Time-Travel Rewind:** If an agent deletes your workspace, instantly rewind the ZFS snapshot to 5 minutes ago (`sd rewind 5`).
+* **The Warden:** An autonomous AI defender that monitors network traffic and generates zero-day eBPF patches on the fly to prevent agent escapes (`sd warden`).
+* **Universal Governance (STP):** Provides an HTTP server and cryptographic sandbox attestations so compliant foundational LLMs refuse to execute unless isolated (`sd protocol`).
 
 ## 🛠 Installation
 
-*(Coming Soon - Project is in Phase 1 Planning)*
+StuntDouble is officially published to the global NPM registry.
+
 ```bash
-npm install -g stuntdouble
-# or
-brew install stuntdouble
+npm install -g stuntdouble-sandbox-cli
+# or run without installing:
+npx stuntdouble-sandbox-cli init
 ```
 
-## 🎮 Usage
+## 🎮 Quick Start
 
-Initialize a safe environment in your project:
+1. **Initialize the sandbox** in your project (generates `.stuntdouble.yaml` and safety rules):
 ```bash
 stuntdouble init
 ```
-This generates a `.stuntdouble.yaml` configuration file outlining network policies.
 
-Run your agent securely:
+2. **Run your agent securely:**
 ```bash
 stuntdouble run claude
 ```
-*(Your agent is now running inside a strictly isolated microVM, with network calls mocked!)*
 
-## 📚 Documentation
+3. **Check safety telemetry:**
+```bash
+stuntdouble stats
+```
 
-For a deeper dive into how StuntDouble works under the hood, please refer to the following documents:
+## 📚 Documentation & Next.js Site
+
+We have a beautiful documentation landing page built with Next.js and Tailwind CSS.
+To run the documentation site locally:
+```bash
+cd docs
+npm install
+npm run dev
+```
+Then navigate to [http://localhost:3000](http://localhost:3000).
+
+For a deeper dive into how StuntDouble works under the hood:
 * [Architecture Blueprint](./ARCHITECTURE.md)
 * [Development Plan & Phases](./PLAN.md)
 * [Contributing Guidelines](./CONTRIBUTING.md)
