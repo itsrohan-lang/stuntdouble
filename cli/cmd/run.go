@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/stuntdouble/cli/pkg/docker"
+	"github.com/stuntdouble/cli/pkg/ebpf"
 )
 
 var runCmd = &cobra.Command{
@@ -60,6 +61,14 @@ var runCmd = &cobra.Command{
 		fmt.Printf(">> Spawning highly restricted Docker container for %s natively...\n", agentName)
 
 		startTime := time.Now()
+
+		// Inject the native eBPF Interceptor to lock down the kernel
+		ebpfHook, err := ebpf.AttachInterceptor("/sys/fs/cgroup/")
+		if err != nil {
+			fmt.Println("❌ Error attaching eBPF hooks:", err)
+			return
+		}
+		defer ebpfHook.Detach()
 
 		sdClient, err := docker.NewClient()
 		if err != nil {
