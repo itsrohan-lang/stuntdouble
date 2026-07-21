@@ -22,9 +22,9 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 3: Telemetry & Developer UX
 **Goal:** Make the tool indispensable for engineering managers and daily drivers.
-* [ ] Build a local CLI dashboard summarizing what destructive commands were blocked during a session.
-* [ ] Optimize container spin-up time to sub-second latency.
-* [ ] Add native support for popular agent configurations (Cursor local rules, Claude Code, Opencode).
+* [x] Build a local CLI dashboard summarizing what destructive commands were blocked during a session.
+* [x] Optimize container spin-up time to sub-second latency.
+* [x] Add native support for popular agent configurations (Cursor local rules, Claude Code, Opencode).
 
 ---
 
