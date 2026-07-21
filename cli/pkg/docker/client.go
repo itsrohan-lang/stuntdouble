@@ -42,6 +42,9 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		Image:        "node:20-alpine",
 		Cmd:          agentCmd,
 		Tty:          true,
+		OpenStdin:    true,
+		StdinOnce:    true,
+		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
 	}, &container.HostConfig{
@@ -53,12 +56,41 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		return err
 	}
 
+	// Attach to the container streams before starting
+	attachResp, err := sdc.cli.ContainerAttach(ctx, resp.ID, container.AttachOptions{
+		Stream: true,
+		Stdin:  true,
+		Stdout: true,
+		Stderr: true,
+	})
+	if err != nil {
+		return err
+	}
+	defer attachResp.Close()
+
 	if err := sdc.cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return err
 	}
 
-	// This is where we would stream the logs and wait for completion in the future
 	fmt.Printf("✅ Agent spawned natively! Container ID: %s\n", resp.ID[:12])
 	
+	// Stream TTY interactively
+	go func() {
+		io.Copy(os.Stdout, attachResp.Reader)
+	}()
+	go func() {
+		io.Copy(attachResp.Conn, os.Stdin)
+	}()
+
+	// Wait for container to exit natively
+	statusCh, errWaitCh := sdc.cli.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
+	select {
+	case err := <-errWaitCh:
+		if err != nil {
+			return err
+		}
+	case <-statusCh:
+	}
+
 	return nil
 }
