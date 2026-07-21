@@ -52,8 +52,8 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 7: Bare-Metal Isolation (StuntOS)
 **Goal:** Move beyond Docker into hardware-level sandboxing.
-* [ ] Develop a custom, ultra-lightweight hypervisor (MicroVM) specifically tuned for LLM-driven operating systems.
-* [ ] Provide enterprise clients with "Stunt Boxes"—dedicated physical hardware clusters explicitly designed for untrusted AI agent execution.
+* [x] Develop a custom, ultra-lightweight hypervisor (MicroVM) specifically tuned for LLM-driven operating systems.
+* [x] Provide enterprise clients with "Stunt Boxes"—dedicated physical hardware clusters explicitly designed for untrusted AI agent execution.
 
 ### Phase 8: Universal AI Governance Protocol
 **Goal:** Establish StuntDouble as a global standard protocol, not just a tool.
