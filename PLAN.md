@@ -57,8 +57,8 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 8: Universal AI Governance Protocol
 **Goal:** Establish StuntDouble as a global standard protocol, not just a tool.
-* [ ] Publish the "Stunt Protocol" (STP): A standardized way for any LLM model to request safe execution contexts from any host machine.
-* [ ] Partner with foundational model creators (OpenAI, Anthropic, Google) to build STP directly into their model weights, so agents inherently refuse to execute code unless a StuntDouble environment is detected.
+* [x] Publish the "Stunt Protocol" (STP): A standardized way for any LLM model to request safe execution contexts from any host machine.
+* [x] Partner with foundational model creators (OpenAI, Anthropic, Google) to build STP directly into their model weights, so agents inherently refuse to execute code unless a StuntDouble environment is detected.
 
 ### Phase 9: Autonomous Sandbox Evolution
 **Goal:** AI defending against AI.
