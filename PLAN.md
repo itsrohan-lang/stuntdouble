@@ -16,9 +16,9 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 2: The Mocking Engine ("The Stunt")
 **Goal:** Integrate the eBPF/Keploy mocking layer so agents can "succeed" at database operations safely.
-* [ ] Embed Keploy/Proxy sidecar into the ephemeral container generation.
-* [ ] Implement `stuntdouble record` to allow developers to generate schema mocks manually.
-* [ ] Ensure the agent receives synthetic success responses when attempting intercepted local network calls.
+* [x] Embed Keploy/Proxy sidecar into the ephemeral container generation.
+* [x] Implement `stuntdouble record` to allow developers to generate schema mocks manually.
+* [x] Ensure the agent receives synthetic success responses when attempting intercepted local network calls.
 
 ### Phase 3: Telemetry & Developer UX
 **Goal:** Make the tool indispensable for engineering managers and daily drivers.

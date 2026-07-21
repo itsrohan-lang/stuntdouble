@@ -18,14 +18,24 @@ isolation:
 mocks:
   auto-record: true
 `
-		// Using strict environment rules: we verify we are in a safe directory, 
-		// but since we are just writing a local config, we proceed.
 		err := os.WriteFile(".stuntdouble.yaml", []byte(configContent), 0644)
 		if err != nil {
 			fmt.Println("Error creating config:", err)
 			return
 		}
-		fmt.Println("✅ Successfully initialized .stuntdouble.yaml")
+		
+		// Native IDE Support: Generate .cursorrules for Cursor Agent
+		cursorRules := `You are operating inside the StuntDouble secure sandbox.
+Never attempt to bypass the Docker isolation.
+Assume all database ports (5432, 27017) are intercepted and mocked by Keploy.
+`
+		err = os.WriteFile(".cursorrules", []byte(cursorRules), 0644)
+		if err != nil {
+			fmt.Println("Error creating .cursorrules:", err)
+			return
+		}
+
+		fmt.Println("✅ Successfully initialized .stuntdouble.yaml and native .cursorrules")
 	},
 }
 
