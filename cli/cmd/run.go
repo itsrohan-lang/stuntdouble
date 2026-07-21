@@ -61,7 +61,7 @@ var runCmd = &cobra.Command{
 		// so it hits the recorded mocks instead of live databases.
 
 		// MVP: We run the agent wrapped in the Keploy testing environment
-		dockerArgs = append(dockerArgs, "keploy/keploy:latest", "test", "-c")
+		dockerArgs = append(dockerArgs, "ghcr.io/keploy/keploy:latest", "test", "-c")
 
 		var agentCmd string
 		if agentName == "claude" {

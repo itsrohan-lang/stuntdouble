@@ -25,7 +25,7 @@ var recordCmd = &cobra.Command{
 			"--privileged", // Required for eBPF recording
 			"-v", fmt.Sprintf("%s:/workspace", os.Getenv("PWD")),
 			"-w", "/workspace",
-			"keploy/keploy:latest",
+			"ghcr.io/keploy/keploy:latest",
 			"record", "-c", appCommand,
 		}
 
