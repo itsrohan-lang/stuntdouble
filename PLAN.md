@@ -62,8 +62,8 @@ This document outlines the zero-to-one roadmap for StuntDouble, and extends into
 
 ### Phase 9: Autonomous Sandbox Evolution
 **Goal:** AI defending against AI.
-* [ ] Deploy an autonomous "Warden Agent" whose sole job is to observe the code written by developer agents, instantly generate new eBPF rules, and dynamically construct bespoke mock environments on the fly.
-* [ ] Continuous self-patching of the sandbox against novel zero-day agent escapes.
+* [x] Deploy an autonomous "Warden Agent" whose sole job is to observe the code written by developer agents, instantly generate new eBPF rules, and dynamically construct bespoke mock environments on the fly.
+* [x] Continuous self-patching of the sandbox against novel zero-day agent escapes.
 
 ---
 *The roadmap is infinite. As AI capabilities scale, our isolation mechanisms must scale faster. The plan never truly finishes; it just ascends.*
