@@ -1,16 +1,22 @@
 {
-  "name": "npm",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "name": "stuntdouble-cli",
+  "version": "1.0.1",
+  "description": "Secure AI Agent Sandbox with Docker & eBPF interceptors",
+  "main": "bin/stuntdouble.js",
+  "bin": {
+    "stuntdouble": "./bin/stuntdouble.js",
+    "sd": "./bin/stuntdouble.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bin": {
-    "stuntdouble": "./bin/stuntdouble.js"
-  }
+  "keywords": [
+    "ai",
+    "sandbox",
+    "docker",
+    "ebpf",
+    "security"
+  ],
+  "author": "Rohan",
+  "license": "MIT"
 }

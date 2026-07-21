@@ -3,7 +3,8 @@
 const { spawn } = require('child_process');
 const path = require('path');
 
-const binaryPath = path.resolve(__dirname, '../../cli/sd');
+// Execute the bundled Go binary in the same bin folder
+const binaryPath = path.resolve(__dirname, 'sd');
 const args = process.argv.slice(2);
 
 const child = spawn(binaryPath, args, { stdio: 'inherit' });
