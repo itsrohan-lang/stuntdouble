@@ -48,6 +48,7 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
+		Env:          []string{fmt.Sprintf("TERM=%s", os.Getenv("TERM"))},
 	}, &container.HostConfig{
 		CapDrop: []string{"ALL"},
 		Binds:   []string{fmt.Sprintf("%s:/workspace", mountDir)},
