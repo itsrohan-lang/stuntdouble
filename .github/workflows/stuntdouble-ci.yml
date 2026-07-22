@@ -12,12 +12,10 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Install StuntDouble
-        run: npm install -g stuntdouble
+        run: npm install -g stuntdouble-sandbox-cli
 
       - name: Verify Sandbox Integrity
         run: sd run echo "Agent code safely audited in ephemeral pipeline"
         
-      - name: Sync Audit Logs to CTO Dashboard
-        env:
-          STUNTDOUBLE_API_KEY: ${{ secrets.STUNTDOUBLE_API_KEY }}
-        run: sd sync-logs
+      - name: Verify CLI
+        run: sd --help
