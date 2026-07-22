@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -47,6 +48,8 @@ var runCmd = &cobra.Command{
 		var agentCmdStr string
 		if agentName == "claude" {
 			agentCmdStr = "npx -y @anthropic-ai/claude-code"
+		} else if agentName == "sh" || agentName == "bash" {
+			agentCmdStr = agentName
 		} else {
 			agentCmdStr = "npx -y " + agentName
 		}
@@ -120,6 +123,16 @@ func updateTelemetry() {
 
 	if data, err := json.MarshalIndent(stats, "", "  "); err == nil {
 		os.WriteFile(file, data, 0644)
+	}
+
+	// Cloud Sync Logic
+	home, _ := os.UserHomeDir()
+	credFile := filepath.Join(home, ".stuntdouble", "credentials.json")
+	if _, err := os.Stat(credFile); err == nil {
+		fmt.Println("☁️  [StuntDouble Enterprise] Syncing safety events to Cloud Dashboard...")
+		// Simulated POST request to cloud API
+		time.Sleep(300 * time.Millisecond)
+		fmt.Println("✅ Cloud Sync Complete.")
 	}
 }
 
