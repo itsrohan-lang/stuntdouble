@@ -4,8 +4,11 @@ export default function Navbar() {
   return (
     <nav className="w-full max-w-6xl flex justify-between items-center py-6 px-8 z-20 border-b border-zinc-800/50 backdrop-blur-md sticky top-0 bg-[#05050a]/80 mx-auto">
       <Link href="/">
-        <div className="text-2xl font-black tracking-tighter text-white cursor-pointer hover:opacity-80 transition">
-          Stunt<span className="text-[#00f0ff]">Double</span>
+        <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition">
+          <img src="/logo.jpg" alt="StuntDouble Logo" className="w-8 h-8 rounded-md" />
+          <div className="text-2xl font-black tracking-tighter text-white">
+            Stunt<span className="text-[#00f0ff]">Double</span>
+          </div>
         </div>
       </Link>
       <div className="flex gap-6 items-center">

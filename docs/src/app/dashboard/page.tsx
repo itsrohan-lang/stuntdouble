@@ -45,12 +45,14 @@ export default function Dashboard() {
       <div className={`fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-[#00f0ff] opacity-[0.03] blur-[120px] rounded-full mix-blend-screen transition-all duration-1000 ${error ? 'bg-red-500 opacity-[0.05]' : 'bg-[#00f0ff]'}`}></div>
 
       {/* Navbar */}
-      <nav className="w-full flex justify-between items-center py-4 px-8 z-20 border-b border-zinc-800/50 backdrop-blur-md bg-[#05050a]/80">
-        <Link href="/">
-          <div className="text-xl font-black tracking-tighter text-white cursor-pointer hover:opacity-80 transition">
-            Stunt<span className="text-[#00f0ff]">Double</span> <span className="text-zinc-500 font-medium text-sm ml-2">Control Plane</span>
+      <nav className="w-full flex justify-between items-center py-6 px-8 border-b border-zinc-800/50 bg-[#0d0d12]">
+        <div className="flex items-center gap-4">
+          <img src="/logo.jpg" alt="StuntDouble Logo" className="w-8 h-8 rounded-md" />
+          <div className="text-2xl font-black tracking-tighter text-white">Stunt<span className="text-[#00f0ff]">Double</span></div>
+          <div className="ml-4 px-3 py-1 rounded-full bg-zinc-800/50 border border-zinc-700 text-xs font-semibold text-zinc-400">
+            Control Plane
           </div>
-        </Link>
+        </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xs font-semibold text-zinc-400 tracking-widest uppercase">Status</span>
