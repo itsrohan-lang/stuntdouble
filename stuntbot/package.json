@@ -1,0 +1,12 @@
+{
+  "name": "stuntbot",
+  "version": "1.0.0",
+  "description": "Native GitHub App for StuntDouble PR Isolation",
+  "private": true,
+  "scripts": {
+    "start": "probot run ./index.js"
+  },
+  "dependencies": {
+    "probot": "^12.2.4"
+  }
+}
