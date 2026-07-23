@@ -21,11 +21,32 @@ int block_outbound_db(struct __sk_buff *skb) {
     // StuntDouble Native Interceptor
     // Hooked at the cgroup level to monitor AI agent egress traffic.
     
-    // In a production build, we parse Ethernet -> IP -> TCP headers here.
-    // For this architectural scaffold, we simulate extracting the port.
-    
-    __u16 dest_port = 5432; // Hardcoded mock port extraction for Postgres
-    
+    // Read the IPv4 header
+    struct iphdr iph;
+    if (bpf_skb_load_bytes(skb, 0, &iph, sizeof(iph)) < 0) {
+        return 1;
+    }
+
+    // Only process IPv4 TCP packets
+    if (iph.version != 4 || iph.protocol != IPPROTO_TCP) {
+        return 1;
+    }
+
+    // Calculate IP header length
+    int ip_hdr_len = iph.ihl * 4;
+    if (ip_hdr_len < sizeof(iph)) {
+        return 1;
+    }
+
+    // Read the TCP header
+    struct tcphdr tcph;
+    if (bpf_skb_load_bytes(skb, ip_hdr_len, &tcph, sizeof(tcph)) < 0) {
+        return 1;
+    }
+
+    // Extract the destination port, convert from network byte order
+    __u16 dest_port = bpf_ntohs(tcph.dest);
+
     // Check if the destination port is in our blocked map
     __u8 *is_blocked = bpf_map_lookup_elem(&blocked_ports, &dest_port);
     if (is_blocked && *is_blocked == 1) {
