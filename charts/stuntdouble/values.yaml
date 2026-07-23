@@ -1,0 +1,23 @@
+image:
+  repository: itsrohan/stuntdouble
+  pullPolicy: IfNotPresent
+  tag: "v3.1.2"
+
+daemonset:
+  name: stuntdouble-daemon
+  namespace: kube-system
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+securityContext:
+  privileged: true
+  capabilities:
+    add:
+      - SYS_ADMIN
+      - NET_ADMIN

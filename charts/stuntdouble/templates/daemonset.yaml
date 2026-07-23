@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.daemonset.name }}
+  namespace: {{ .Values.daemonset.namespace }}
+  labels:
+    app: stuntdouble
+spec:
+  selector:
+    matchLabels:
+      app: stuntdouble
+  template:
+    metadata:
+      labels:
+        app: stuntdouble
+    spec:
+      hostPID: true
+      hostNetwork: true
+      containers:
+      - name: stuntdouble
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        securityContext:
+          privileged: {{ .Values.securityContext.privileged }}
+          capabilities:
+            add:
+{{ toYaml .Values.securityContext.capabilities.add | indent 14 }}
+        volumeMounts:
+        - name: sys-fs-cgroup
+          mountPath: /sys/fs/cgroup
+          readOnly: false
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+      volumes:
+      - name: sys-fs-cgroup
+        hostPath:
+          path: /sys/fs/cgroup
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
