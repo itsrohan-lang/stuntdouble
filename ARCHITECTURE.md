@@ -26,6 +26,27 @@ graph TD
     MockProxy -.->|Blocked| RealDB[(Local / Prod DB)]
 ```
 
+## Cross-Platform Kernel Interception
+
+StuntDouble uses a multi-layered defense-in-depth approach, combining Docker namespace isolation with native kernel-level packet interception across Linux, macOS, and Windows.
+
+```mermaid
+graph TD
+    A[AI Coding Agent] -->|Executes Command| B(StuntDouble CLI)
+    B --> C{OS Detection}
+    
+    C -->|Linux| D[eBPF Kernel Hook]
+    C -->|macOS| E[Endpoint Security ESF]
+    C -->|Windows| F[WFP Driver]
+
+    D --> G[Docker Container]
+    E --> G
+    F --> G
+
+    G -->|Outbound DB Call| H{Keploy WASM Proxy / Plugin Engine}
+    H -->|Malicious| I[Blackhole]
+    H -->|Safe/Mocked| J[Return Synthetic HTTP 200]
+```
 ## Core Components
 
 ### 1. The CLI Wrapper (`cmd/sd`)

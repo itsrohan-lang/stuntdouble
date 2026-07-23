@@ -10,25 +10,7 @@ StuntDouble is a hyper-secure execution environment that lets AI coding agents (
 
 ## 🧠 Architecture
 
-StuntDouble uses a multi-layered defense-in-depth approach, combining Docker namespace isolation with kernel-level packet interception.
-
-```mermaid
-graph TD
-    A[AI Coding Agent] -->|Executes Command| B(StuntDouble CLI)
-    B --> C{OS Detection}
-    
-    C -->|Linux| D[eBPF Kernel Hook]
-    C -->|macOS| E[Endpoint Security ESF]
-    C -->|Windows| F[WFP Driver]
-
-    D --> G[Docker Container]
-    E --> G
-    F --> G
-
-    G -->|Outbound DB Call| H{Keploy WASM Proxy}
-    H -->|Malicious| I[Blackhole]
-    H -->|Safe/Mocked| J[Return Synthetic HTTP 200]
-```
+Please see [ARCHITECTURE.md](ARCHITECTURE.md) for detailed system design, component breakdowns, and kernel-level interception diagrams (eBPF, macOS ESF, Windows WFP).
 
 ## 🚀 Quick Start
 
