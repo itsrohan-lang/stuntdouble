@@ -27,12 +27,20 @@ func NewClient() (*StuntDockerClient, error) {
 }
 
 // SpawnIsolatedAgent creates a heavily restricted container natively via API
-func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd []string, mountDir string) error {
-	fmt.Println(">> [Native Engine] Pulling node:20-alpine image...")
+func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd []string, mountDir string, envImage string) error {
+	if envImage == "" {
+		envImage = "node:20-alpine" // Default to Node.js
+	}
 	
-	reader, err := sdc.cli.ImagePull(ctx, "docker.io/library/node:20-alpine", image.PullOptions{})
+	fmt.Printf(">> [Native Engine] Pulling %s image...\n", envImage)
+	
+	reader, err := sdc.cli.ImagePull(ctx, "docker.io/library/"+envImage, image.PullOptions{})
 	if err != nil {
-		return err
+		// If docker.io fails, fallback to bare string (in case they passed a full URI)
+		reader, err = sdc.cli.ImagePull(ctx, envImage, image.PullOptions{})
+		if err != nil {
+			return err
+		}
 	}
 	io.Copy(os.Stdout, reader)
 
@@ -59,7 +67,7 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		exec.Command("docker", "kill", sidecarName).Run()
 	}()
 
-	fmt.Println(">> [Native Engine] Spawning agent with --cap-drop=ALL attached to sidecar network...")
+	fmt.Printf(">> [Native Engine] Spawning %s agent with --cap-drop=ALL attached to sidecar network...\n", envImage)
 	
 	// 2. Start the Agent container, attaching its network namespace to the sidecar
 	args := []string{
@@ -70,7 +78,7 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		fmt.Sprintf("--network=container:%s", sidecarName),
 		"-v", fmt.Sprintf("%s:/workspace", mountDir),
 		"-w", "/workspace",
-		"node:20-alpine",
+		envImage,
 	}
 	args = append(args, agentCmd...)
 

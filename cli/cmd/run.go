@@ -84,7 +84,8 @@ var runCmd = &cobra.Command{
 			return
 		}
 
-		if err := sdClient.SpawnIsolatedAgent(cmd.Context(), agentCmd, cwd); err != nil {
+		envImage, _ := cmd.Flags().GetString("env")
+		if err := sdClient.SpawnIsolatedAgent(cmd.Context(), agentCmd, cwd, envImage); err != nil {
 			fmt.Println("\n⚠️ Agent session ended or was terminated:", err)
 		} else {
 			fmt.Println("\n✅ Agent session completed safely.")
@@ -142,5 +143,6 @@ func updateTelemetry(blockedCount int) {
 
 func init() {
 	runCmd.Flags().BoolP("remote", "r", false, "Execute the agent in a remote StuntDouble Cloud MicroVM")
+	runCmd.Flags().StringP("env", "e", "node:20-alpine", "Specify the dynamic Docker runtime image (e.g., python:3.11-alpine, rust:alpine)")
 	rootCmd.AddCommand(runCmd)
 }
