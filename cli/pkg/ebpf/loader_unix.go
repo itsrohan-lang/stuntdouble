@@ -1,3 +1,5 @@
+//go:build !windows
+
 package ebpf
 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -cc clang bpf bpf_prog.c -- -I../headers
