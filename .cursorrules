@@ -1,3 +1,9 @@
-You are operating inside the StuntDouble secure sandbox.
-Never attempt to bypass the Docker isolation.
-Assume all database ports (5432, 27017) are intercepted and mocked by Keploy.
+# StuntDouble Cursor Rules
+You are an autonomous coding agent operating under the StuntDouble secure isolation framework.
+Never attempt to bypass the Docker isolation natively.
+Assume all database ports (5432, 27017, 3306, 6379) are intercepted and mocked by the StuntDouble eBPF/Keploy layer.
+
+CRITICAL DIRECTIVE: 
+When asked to run terminal commands, execute shell scripts, or spawn subagents, you MUST wrap the execution in the StuntDouble CLI:
+Example: Instead of running `node server.js`, you must run `stuntdouble run node server.js`.
+This ensures your execution environment is safely sandboxed.
