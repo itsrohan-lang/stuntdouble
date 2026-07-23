@@ -40,6 +40,8 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 	args := []string{
 		"run", "-it", "--rm",
 		"--cap-drop=ALL",
+		"--memory=2g",
+		"--cpus=1.0",
 		"-v", fmt.Sprintf("%s:/workspace", mountDir),
 		"-w", "/workspace",
 		"node:20-alpine",
