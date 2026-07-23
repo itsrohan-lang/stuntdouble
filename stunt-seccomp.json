@@ -1,0 +1,52 @@
+{
+  "defaultAction": "SCMP_ACT_ERRNO",
+  "architectures": [
+    "SCMP_ARCH_X86_64",
+    "SCMP_ARCH_X86",
+    "SCMP_ARCH_X32"
+  ],
+  "syscalls": [
+    {
+      "names": [
+        "ptrace",
+        "process_vm_readv",
+        "process_vm_writev",
+        "mount",
+        "umount2",
+        "chroot",
+        "unshare",
+        "setns",
+        "bpf"
+      ],
+      "action": "SCMP_ACT_ERRNO",
+      "comment": "Strictly block process hijacking, namespace manipulation, and inner-container BPF loading."
+    },
+    {
+      "names": [
+        "read",
+        "write",
+        "open",
+        "close",
+        "stat",
+        "fstat",
+        "lstat",
+        "poll",
+        "lseek",
+        "mmap",
+        "mprotect",
+        "munmap",
+        "brk",
+        "rt_sigaction",
+        "rt_sigprocmask",
+        "rt_sigreturn",
+        "ioctl",
+        "pread64",
+        "pwrite64",
+        "readv",
+        "writev"
+      ],
+      "action": "SCMP_ACT_ALLOW",
+      "comment": "Allow basic POSIX file and memory operations necessary for interpreters (Node/Python) to function safely."
+    }
+  ]
+}
