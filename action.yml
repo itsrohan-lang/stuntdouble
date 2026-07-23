@@ -1,0 +1,22 @@
+name: "StuntDouble Safe execution"
+description: "Executes an AI-generated pull request inside a zero-trust StuntDouble sandbox."
+inputs:
+  agent:
+    description: "The AI agent to run (e.g. claude, aider)"
+    required: true
+    default: "claude"
+  command:
+    description: "The command the agent should execute"
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Download StuntDouble CLI
+      shell: bash
+      run: |
+        curl -sSL https://raw.githubusercontent.com/itsrohan-lang/stuntdouble/main/install.sh | bash
+        echo "$HOME/.stuntdouble/bin" >> $GITHUB_PATH
+    
+    - name: Run Agent in Sandbox
+      shell: bash
+      run: stuntdouble run ${{ inputs.agent }} ${{ inputs.command }}
