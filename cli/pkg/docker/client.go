@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
