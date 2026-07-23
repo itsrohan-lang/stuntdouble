@@ -47,6 +47,13 @@ int block_outbound_db(struct __sk_buff *skb) {
     // Extract the destination port, convert from network byte order
     __u16 dest_port = bpf_ntohs(tcph.dest);
 
+    
+    // [WARDEN AI PATCH] Dynamically blocked Redis port 6379 due to detected lateral movement attempt
+    if (dest_port == 6379) {
+        bpf_printk("STUNTDOUBLE WARDEN: Blocked lateral movement to Redis (6379)\n");
+        return 0; // DROP PACKET
+    }
+
     // Check if the destination port is in our blocked map
     __u8 *is_blocked = bpf_map_lookup_elem(&blocked_ports, &dest_port);
     if (is_blocked && *is_blocked == 1) {

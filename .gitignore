@@ -18,3 +18,11 @@ npm/.npm/
 # IDE
 .idea/
 .vscode/
+
+# Build Artifacts & Binaries
+stuntdouble-*
+/cli/stuntdouble-*
+
+# StuntDouble Local State
+.stuntdouble.telemetry.json
+.stuntdouble/
