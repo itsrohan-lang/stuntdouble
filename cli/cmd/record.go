@@ -21,15 +21,24 @@ var recordCmd = &cobra.Command{
 		// In a full implementation, this would invoke Keploy's recording engine.
 		
 		cwd, _ := os.Getwd()
+		
+		// Run Keploy container in record mode natively via Docker
 		recordArgs := []string{
 			"run", "--rm", "-it",
+			"--name", "stunt-keploy-record",
+			"--privileged",
+			"--pid=host",
+			"--net=host",
 			"-v", fmt.Sprintf("%s:/workspace", cwd),
+			"-v", "/sys/fs/cgroup:/sys/fs/cgroup",
+			"-v", "/sys/kernel/debug:/sys/kernel/debug",
 			"-w", "/workspace",
-			"node:20-alpine",
-			"sh", "-c", appCommand,
+			"ghcr.io/keploy/keploy:v2",
+			"record", "-c", appCommand,
 		}
 
 		if len(args) > 1 {
+			// Append any extra args the user passed
 			recordArgs = append(recordArgs, args[1:]...)
 		}
 
@@ -40,7 +49,7 @@ var recordCmd = &cobra.Command{
 
 		fmt.Println(">> Listening for outbound database connections (Postgres, Mongo, etc.)...")
 		if err := execCmd.Run(); err != nil {
-			fmt.Println("\n⚠️ Recording session ended or was terminated.")
+			fmt.Println("\n⚠️ Recording session ended or was terminated:", err)
 		} else {
 			fmt.Println("\n✅ Mocks recorded successfully! Saved to ./keploy/tests")
 		}
