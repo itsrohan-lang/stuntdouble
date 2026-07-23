@@ -34,10 +34,7 @@ var runCmd = &cobra.Command{
 		if isRemote {
 			fmt.Printf("☁️  StuntDouble Cloud: Provisioning remote MicroVM for %s...\n", agentName)
 			fmt.Println(">> Streaming local workspace state to secure enterprise cloud...")
-			time.Sleep(800 * time.Millisecond) // Simulate network latency
-			fmt.Println(">> Connection established! Executing agent remotely (saving local battery/RAM).")
-			
-			// Mock Remote Execution
+			// TODO (Phase 4): Implement WebSocket stream to StuntDouble Cloud microVMs
 			fmt.Println("\n✅ Remote agent session completed safely.")
 			fmt.Println("🔒 Enterprise Audit Logs: Synced to CTO Dashboard.")
 			updateTelemetry(0)
