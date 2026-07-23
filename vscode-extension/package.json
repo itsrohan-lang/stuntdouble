@@ -2,7 +2,7 @@
   "name": "stuntdouble-vscode",
   "displayName": "StuntDouble",
   "description": "Zero-Trust eBPF Sandbox for AI Coding Agents",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "engines": {
     "vscode": "^1.85.0"
   },
