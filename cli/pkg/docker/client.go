@@ -35,13 +35,38 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 	}
 	io.Copy(os.Stdout, reader)
 
-	fmt.Println(">> [Native Engine] Spawning agent with --cap-drop=ALL via CLI proxy stream...")
+	fmt.Println(">> [Stunt Layer] Injecting Keploy proxy sidecar...")
+
+	// 1. Start the Keploy proxy sidecar in the background
+	sidecarName := "stunt-keploy-sidecar-" + filepath.Base(mountDir)
+	sidecarArgs := []string{
+		"run", "-d", "--rm",
+		"--name", sidecarName,
+		"--cap-add=NET_ADMIN", // Keploy requires network capabilities to intercept traffic
+		"-p", "16789:16789",
+		"ghcr.io/keploy/keploy:v2",
+	}
 	
+	sidecarCmd := exec.CommandContext(ctx, "docker", sidecarArgs...)
+	if err := sidecarCmd.Run(); err != nil {
+		return fmt.Errorf("failed to inject keploy sidecar: %w", err)
+	}
+
+	// Ensure the sidecar is cleaned up after the agent finishes
+	defer func() {
+		fmt.Println(">> [Stunt Layer] Tearing down Keploy sidecar...")
+		exec.Command("docker", "kill", sidecarName).Run()
+	}()
+
+	fmt.Println(">> [Native Engine] Spawning agent with --cap-drop=ALL attached to sidecar network...")
+	
+	// 2. Start the Agent container, attaching its network namespace to the sidecar
 	args := []string{
 		"run", "-it", "--rm",
 		"--cap-drop=ALL",
 		"--memory=2g",
 		"--cpus=1.0",
+		fmt.Sprintf("--network=container:%s", sidecarName),
 		"-v", fmt.Sprintf("%s:/workspace", mountDir),
 		"-w", "/workspace",
 		"node:20-alpine",
@@ -58,7 +83,6 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		return fmt.Errorf("agent execution failed: %w", err)
 	}
 
-	// Force restore cursor visibility and color just in case the agent crashed or exited abruptly
 	fmt.Print("\033[?25h\033[0m")
 	return nil
 }
