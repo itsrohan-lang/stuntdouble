@@ -44,7 +44,7 @@ jobs:
           go build -ldflags="-s -w" -o stuntdouble-${{ matrix.os }}-${{ matrix.arch }}$ext main.go
 
       - name: Upload Release Assets
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: cli/stuntdouble-*
         env:
