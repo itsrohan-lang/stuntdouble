@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -124,8 +126,17 @@ func updateTelemetry(blockedCount int) {
 	credFile := filepath.Join(home, ".stuntdouble", "credentials.json")
 	if _, err := os.Stat(credFile); err == nil {
 		fmt.Println("☁️  [StuntDouble Enterprise] Syncing safety events to Cloud Dashboard...")
-		// TODO: Implement actual POST request to cloud API
-		fmt.Println("✅ Cloud Sync Complete.")
+		
+		jsonData, err := json.Marshal(stats)
+		if err == nil {
+			resp, err := http.Post("https://api.stuntdouble.io/telemetry", "application/json", bytes.NewBuffer(jsonData))
+			if err != nil {
+				fmt.Println("⚠️ Failed to reach Cloud Dashboard:", err)
+			} else {
+				defer resp.Body.Close()
+				fmt.Println("✅ Cloud Sync Complete. Response:", resp.Status)
+			}
+		}
 	}
 }
 
