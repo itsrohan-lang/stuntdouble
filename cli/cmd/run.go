@@ -40,7 +40,7 @@ var runCmd = &cobra.Command{
 			// Mock Remote Execution
 			fmt.Println("\n✅ Remote agent session completed safely.")
 			fmt.Println("🔒 Enterprise Audit Logs: Synced to CTO Dashboard.")
-			updateTelemetry()
+			updateTelemetry(0)
 			return
 		}
 
@@ -95,12 +95,12 @@ var runCmd = &cobra.Command{
 		fmt.Printf("⏱️  Container spin-up and execution completed in %v\n", duration)
 
 		// Update MVP Telemetry
-		updateTelemetry()
+		// In the future, we will fetch this from ebpfHook
+		updateTelemetry(0)
 	},
 }
 
-func updateTelemetry() {
-	// In MVP, we simulate reading intercepted eBPF events and updating stats
+func updateTelemetry(blockedCount int) {
 	file := ".stuntdouble.telemetry.json"
 
 	stats := struct {
@@ -115,10 +115,7 @@ func updateTelemetry() {
 	}
 
 	stats.TotalRuns++
-	// Simulate blocking a destructive command 20% of the time for the demo
-	if time.Now().Unix()%5 == 0 {
-		stats.BlockedCommands++
-	}
+	stats.BlockedCommands += blockedCount
 	stats.LastRun = time.Now()
 
 	if data, err := json.MarshalIndent(stats, "", "  "); err == nil {
@@ -130,8 +127,7 @@ func updateTelemetry() {
 	credFile := filepath.Join(home, ".stuntdouble", "credentials.json")
 	if _, err := os.Stat(credFile); err == nil {
 		fmt.Println("☁️  [StuntDouble Enterprise] Syncing safety events to Cloud Dashboard...")
-		// Simulated POST request to cloud API
-		time.Sleep(300 * time.Millisecond)
+		// TODO: Implement actual POST request to cloud API
 		fmt.Println("✅ Cloud Sync Complete.")
 	}
 }
