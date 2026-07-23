@@ -39,3 +39,27 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
+
+  # Maintain dependencies for the StuntBot GitHub App
+  - package-ecosystem: "npm"
+    directory: "/stuntbot"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the Control Plane (Go)
+  - package-ecosystem: "gomod"
+    directory: "/control-plane"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the Python SDK
+  - package-ecosystem: "pip"
+    directory: "/python-sdk"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
