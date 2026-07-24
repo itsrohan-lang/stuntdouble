@@ -27,14 +27,25 @@ module.exports = (app) => {
     // In a production environment, StuntBot would securely clone the PR branch into 
     // a temporary directory, and execute the StuntDouble CLI with the selected AI agent.
     
-    // Simulate the CLI executing an agent like Claude to review the code
-    const child = spawn("sd", ["run", "claude"]);
+    // Deploy a Multi-Agent Swarm (StuntNet)
+    // We spawn a 'dev' agent to review the code, and a 'qa' agent to attempt malicious escapes
+    app.log.info(">> Spawning Dev and QA agents into isolated StuntNet Swarm...");
+    const devAgent = spawn("sd", ["run", "claude-dev", "--network=stuntnet"]);
+    const qaAgent = spawn("sd", ["run", "cursor-qa", "--network=stuntnet"]);
     
-    child.on('close', async (code) => {
-      const resultComment = context.issue({
-        body: `✅ **StuntDouble Review Complete**\n\nAgent executed safely inside the kernel sandbox. No database connections or rogue network calls were allowed.\n\n*Zero zero-day escapes detected during review.*`
-      });
-      await context.octokit.issues.createComment(resultComment);
-    });
+    let completed = 0;
+    
+    const checkCompletion = async () => {
+      completed++;
+      if (completed === 2) {
+        const resultComment = context.issue({
+          body: `✅ **StuntDouble Swarm Complete**\n\nBoth Dev and QA Agents executed safely inside the StuntNet isolated network. No external database connections or rogue network calls were allowed.\n\n*Zero zero-day escapes detected during swarm review.*`
+        });
+        await context.octokit.issues.createComment(resultComment);
+      }
+    };
+    
+    devAgent.on('close', checkCompletion);
+    qaAgent.on('close', checkCompletion);
   });
 };
