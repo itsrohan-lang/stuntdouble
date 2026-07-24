@@ -13,6 +13,8 @@ export default function Dashboard() {
     allowed_agents: ["claude", "cursor", "opendevin"],
     strict_egress: true
   }, null, 2));
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [isSimulating, setIsSimulating] = useState(false);
   
   const deployPolicy = async () => {
     setIsDeploying(true);
@@ -26,6 +28,38 @@ export default function Dashboard() {
     } catch (e) {
       console.error(e);
       setIsDeploying(false);
+    }
+  };
+
+  const fetchAuditLogs = async () => {
+    try {
+      const res = await fetch('http://localhost:4439/api/audit');
+      const data = await res.json();
+      if (data) setAuditLogs(data);
+    } catch (e) {
+      console.error("Failed to fetch audit logs", e);
+    }
+  };
+
+  const simulateRogueAttack = async () => {
+    setIsSimulating(true);
+    try {
+      await fetch('http://localhost:4439/api/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_id: "rogue-agent-007",
+          target: "api.stripe.com/v1/payouts",
+          action: "NETWORK_EXFILTRATION",
+          status: "Blocked (eBPF Kernel)",
+          created_at: new Date().toISOString()
+        })
+      });
+      await fetchAuditLogs();
+      setTimeout(() => setIsSimulating(false), 500);
+    } catch (e) {
+      console.error(e);
+      setIsSimulating(false);
     }
   };
 
@@ -46,10 +80,14 @@ export default function Dashboard() {
     
     // Initial fetch
     fetchStats();
+    fetchAuditLogs();
     
-    const interval = setInterval(fetchStats, 2000);
+    const interval = setInterval(() => {
+      fetchStats();
+      if (activeTab === 'audit') fetchAuditLogs();
+    }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeTab]);
 
   // Simulated live data feed
   const [data, setData] = useState([
@@ -216,20 +254,28 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'audit' && (
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 rounded-3xl overflow-hidden">
+          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.05)]">
             <div className="p-8 border-b border-zinc-800/50 flex justify-between items-center bg-[#111116]">
               <div>
                 <h1 className="text-3xl font-bold text-white tracking-tight">Audit Logs</h1>
                 <p className="text-zinc-400 mt-2">Immutable enterprise ledger of all agent actions.</p>
               </div>
-              <div className="relative">
+              <div className="flex gap-4">
+                <button 
+                  onClick={simulateRogueAttack}
+                  disabled={isSimulating}
+                  className="bg-[#ef4444]/10 hover:bg-[#ef4444]/20 border border-[#ef4444]/50 text-[#ef4444] px-4 py-2 rounded-xl font-bold transition flex items-center gap-2"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  {isSimulating ? 'Simulating...' : 'Simulate Rogue Attack'}
+                </button>
                 <input type="text" placeholder="Search logs..." className="bg-[#0a0a0f] border border-zinc-800 text-white px-4 py-2 rounded-xl focus:outline-none focus:border-[#00f0ff]/50 transition w-64" />
               </div>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#18181b]/50 border-b border-zinc-800 text-zinc-400 text-xs uppercase tracking-wider">
+                <thead className="sticky top-0 z-10 bg-[#18181b]">
+                  <tr className="border-b border-zinc-800 text-zinc-400 text-xs uppercase tracking-wider">
                     <th className="p-4 font-semibold">Timestamp</th>
                     <th className="p-4 font-semibold">Agent ID</th>
                     <th className="p-4 font-semibold">Action</th>
@@ -238,16 +284,14 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
-                  {[
-                    { id: '1', time: '2026-07-24 10:25:12', agent: 'claude-code', action: 'NETWORK_OUT', target: 'api.stripe.com', status: 'Blocked (Mocked)' },
-                    { id: '2', time: '2026-07-24 10:24:55', agent: 'claude-code', action: 'FILE_WRITE', target: '/src/payment.ts', status: 'Allowed' },
-                    { id: '3', time: '2026-07-24 10:15:30', agent: 'opendevin', action: 'NETWORK_OUT', target: 'postgres:5432', status: 'Blocked (Strict)' },
-                    { id: '4', time: '2026-07-24 10:02:11', agent: 'cursor', action: 'EXEC', target: 'rm -rf /etc', status: 'Blocked (Sandbox)' },
-                    { id: '5', time: '2026-07-24 09:45:00', agent: 'aider', action: 'NETWORK_OUT', target: 'registry.npmjs.org', status: 'Allowed' },
-                  ].map((row) => (
-                    <tr key={row.id} className="hover:bg-[#18181b]/50 transition text-sm">
-                      <td className="p-4 text-zinc-500 font-mono">{row.time}</td>
-                      <td className="p-4 text-zinc-300 font-medium flex items-center gap-2"><Terminal className="w-4 h-4 text-zinc-500"/> {row.agent}</td>
+                  {auditLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-zinc-500 font-medium">No audit logs recorded yet. Try simulating an attack!</td>
+                    </tr>
+                  ) : auditLogs.map((row: any) => (
+                    <tr key={row.id} className={`hover:bg-[#18181b]/50 transition text-sm ${row.action === 'NETWORK_EXFILTRATION' ? 'bg-[#ef4444]/5' : ''}`}>
+                      <td className="p-4 text-zinc-500 font-mono">{new Date(row.created_at).toLocaleString()}</td>
+                      <td className="p-4 text-zinc-300 font-medium flex items-center gap-2"><Terminal className="w-4 h-4 text-zinc-500"/> {row.agent_id}</td>
                       <td className="p-4 text-zinc-400 font-mono text-xs">{row.action}</td>
                       <td className="p-4 text-[#79c0ff] font-mono text-xs">{row.target}</td>
                       <td className="p-4">
