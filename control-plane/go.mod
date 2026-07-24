@@ -2,7 +2,10 @@ module github.com/stuntdouble/control-plane
 
 go 1.25.5
 
-require github.com/prometheus/client_golang v1.24.0
+require (
+	github.com/graphql-go/graphql v0.8.1
+	github.com/prometheus/client_golang v1.24.0
+)
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/graphql-go/graphql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -35,6 +36,53 @@ type EnterpriseRBACPolicy struct {
 	AllowedAgents []string `json:"allowed_agents"`
 	StrictEgress  bool     `json:"strict_egress"`
 }
+
+var globalPolicy = EnterpriseRBACPolicy{
+	OrgID:         "ent_global",
+	BlockedPorts:  []int{5432, 27017, 3306, 6379},
+	AllowedAgents: []string{"claude", "cursor", "opendevin"},
+	StrictEgress:  true,
+}
+
+var policyType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Policy",
+		Fields: graphql.Fields{
+			"org_id": &graphql.Field{
+				Type: graphql.String,
+			},
+			"blocked_ports": &graphql.Field{
+				Type: graphql.NewList(graphql.Int),
+			},
+			"allowed_agents": &graphql.Field{
+				Type: graphql.NewList(graphql.String),
+			},
+			"strict_egress": &graphql.Field{
+				Type: graphql.Boolean,
+			},
+		},
+	},
+)
+
+var queryType = graphql.NewObject(
+	graphql.ObjectConfig{
+		Name: "Query",
+		Fields: graphql.Fields{
+			"policy": &graphql.Field{
+				Type: policyType,
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return globalPolicy, nil
+				},
+			},
+		},
+	},
+)
+
+var schema, _ = graphql.NewSchema(
+	graphql.SchemaConfig{
+		Query: queryType,
+	},
+)
 
 type TelemetryData struct {
 	TotalRuns       int       `json:"total_runs"`
@@ -64,8 +112,7 @@ func handleTelemetry(w http.ResponseWriter, r *http.Request) {
 	globalMetrics.BlockedCommands += data.BlockedCommands
 	globalMetrics.LastRun = data.LastRun
 	
-	// Update Prometheus metrics
-	activeAgents.Set(float64(globalMetrics.TotalRuns)) // Simplified mapping
+	activeAgents.Set(float64(globalMetrics.TotalRuns))
 	blockedRequests.Add(float64(data.BlockedCommands))
 	mu.Unlock()
 
@@ -74,20 +121,30 @@ func handleTelemetry(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlePolicy(w http.ResponseWriter, r *http.Request) {
-	policy := EnterpriseRBACPolicy{
-		OrgID:         "ent_global",
-		BlockedPorts:  []int{5432, 27017, 3306, 6379},
-		AllowedAgents: []string{"claude", "cursor", "opendevin"},
-		StrictEgress:  true,
-	}
-	
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(policy)
+	json.NewEncoder(w).Encode(globalPolicy)
+}
+
+func handleGraphQL(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var req struct {
+		Query string `json:"query"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+	result := graphql.Do(graphql.Params{
+		Schema:        schema,
+		RequestString: req.Query,
+	})
+	json.NewEncoder(w).Encode(result)
 }
 
 func main() {
 	http.HandleFunc("/telemetry", handleTelemetry)
 	http.HandleFunc("/policy", handlePolicy)
+	http.HandleFunc("/graphql", handleGraphQL)
 	http.Handle("/metrics", promhttp.Handler())
 	
 	port := "4439"
