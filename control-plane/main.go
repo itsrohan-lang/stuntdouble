@@ -147,6 +147,15 @@ func handlePolicy(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(globalPolicy)
 }
 
+func handleStats(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	
+	mu.Lock()
+	defer mu.Unlock()
+	json.NewEncoder(w).Encode(globalMetrics)
+}
+
 func handleGraphQL(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var req struct {
@@ -166,6 +175,7 @@ func handleGraphQL(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/telemetry", handleTelemetry)
 	http.HandleFunc("/policy", handlePolicy)
+	http.HandleFunc("/api/stats", handleStats)
 	http.HandleFunc("/graphql", handleGraphQL)
 	http.Handle("/metrics", promhttp.Handler())
 	

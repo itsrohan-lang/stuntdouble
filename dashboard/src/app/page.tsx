@@ -28,6 +28,28 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    // Poll the Control Plane API for live stats every 2 seconds
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('http://localhost:4439/api/stats');
+        const data = await res.json();
+        // If data isn't initialized on backend, keep existing state
+        if (data.total_runs > 0 || data.blocked_commands > 0) {
+          setTelemetry({ total_runs: data.total_runs, blocked_commands: data.blocked_commands });
+        }
+      } catch (e) {
+        console.error("Failed to fetch live stats", e);
+      }
+    };
+    
+    // Initial fetch
+    fetchStats();
+    
+    const interval = setInterval(fetchStats, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Simulated live data feed
   const [data, setData] = useState([
     { time: '10:00', blocked: 12 },
