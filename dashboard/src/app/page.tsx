@@ -7,6 +7,12 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [telemetry, setTelemetry] = useState({ total_runs: 0, blocked_commands: 0 });
   const [isDeploying, setIsDeploying] = useState(false);
+  const [policyJson, setPolicyJson] = useState(JSON.stringify({
+    org_id: "ent_global_updated",
+    blocked_ports: [5432, 27017, 3306, 6379, 8080],
+    allowed_agents: ["claude", "cursor", "opendevin"],
+    strict_egress: true
+  }, null, 2));
   
   const deployPolicy = async () => {
     setIsDeploying(true);
@@ -14,12 +20,7 @@ export default function Dashboard() {
       await fetch('http://localhost:4439/policy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          org_id: "ent_global_updated",
-          blocked_ports: [5432, 27017, 3306, 6379, 8080],
-          allowed_agents: ["claude", "cursor", "opendevin"],
-          strict_egress: true
-        })
+        body: policyJson
       });
       setTimeout(() => setIsDeploying(false), 1000);
     } catch (e) {
@@ -137,28 +138,26 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-bold text-white">Blocked Outbound Connections</h2>
-                  <span className="px-3 py-1 bg-[#ef4444]/10 text-[#ef4444] text-xs font-bold rounded-full border border-[#ef4444]/20 uppercase tracking-wider">Live</span>
+                  <h2 className="text-xl font-bold text-white">Threat Vector Analysis</h2>
+                  <span className="px-3 py-1 bg-[#ef4444]/10 text-[#ef4444] text-xs font-bold rounded-full border border-[#ef4444]/20 uppercase tracking-wider">Live Blocks</span>
                 </div>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={data}>
-                      <defs>
-                        <linearGradient id="colorBlocked" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                      <XAxis dataKey="time" stroke="#52525b" tick={{fill: '#71717a'}} axisLine={false} tickLine={false} />
-                      <YAxis stroke="#52525b" tick={{fill: '#71717a'}} axisLine={false} tickLine={false} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px', color: '#fff' }}
-                        itemStyle={{ color: '#ef4444' }}
-                      />
-                      <Area type="monotone" dataKey="blocked" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorBlocked)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <div className="h-[300px] w-full flex flex-col justify-center space-y-6">
+                  <div>
+                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Database Ports (5432, 27017)</span><span className="text-[#ef4444] font-mono">42%</span></div>
+                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#ef4444] h-2 rounded-full" style={{width: '42%'}}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Cloud Metadata APIs (169.254.x.x)</span><span className="text-[#f97316] font-mono">28%</span></div>
+                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#f97316] h-2 rounded-full" style={{width: '28%'}}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Stripe/Payment APIs</span><span className="text-[#eab308] font-mono">18%</span></div>
+                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#eab308] h-2 rounded-full" style={{width: '18%'}}></div></div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Internal K8s DNS</span><span className="text-[#3b82f6] font-mono">12%</span></div>
+                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#3b82f6] h-2 rounded-full" style={{width: '12%'}}></div></div>
+                  </div>
                 </div>
               </div>
 
@@ -206,24 +205,12 @@ export default function Dashboard() {
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
                 <span className="text-zinc-600 ml-4">.stuntdouble.yaml</span>
               </div>
-              <pre className="text-[#c9d1d9]">
-                <span className="text-[#ff7b72]">version</span>: <span className="text-[#79c0ff]">"1.0"</span>{'\n'}
-                <span className="text-[#ff7b72]">policies</span>:{'\n'}
-                {'  '}- <span className="text-[#ff7b72]">name</span>: <span className="text-[#79c0ff]">"Global Default Deny"</span>{'\n'}
-                {'    '}<span className="text-[#ff7b72]">action</span>: <span className="text-[#79c0ff]">"deny"</span>{'\n'}
-                {'    '}<span className="text-[#ff7b72]">rules</span>:{'\n'}
-                {'      '}- <span className="text-[#79c0ff]">"*"</span>{'\n'}
-                {'\n'}
-                {'  '}- <span className="text-[#ff7b72]">name</span>: <span className="text-[#79c0ff]">"Allow NPM Installs"</span>{'\n'}
-                {'    '}<span className="text-[#ff7b72]">action</span>: <span className="text-[#79c0ff]">"allow"</span>{'\n'}
-                {'    '}<span className="text-[#ff7b72]">rules</span>:{'\n'}
-                {'      '}- <span className="text-[#79c0ff]">"registry.npmjs.org"</span>{'\n'}
-                {'\n'}
-                {'  '}- <span className="text-[#ff7b72]">name</span>: <span className="text-[#79c0ff]">"Stripe API Mocking"</span>{'\n'}
-                {'    '}<span className="text-[#ff7b72]">action</span>: <span className="text-[#79c0ff]">"mock"</span>{'\n'}
-                {'    '}<span className="text-[#ff7b72]">rules</span>:{'\n'}
-                {'      '}- <span className="text-[#79c0ff]">"api.stripe.com"</span>{'\n'}
-              </pre>
+              <textarea 
+                className="w-full h-64 bg-transparent text-[#79c0ff] font-mono text-sm resize-none focus:outline-none"
+                value={policyJson}
+                onChange={(e) => setPolicyJson(e.target.value)}
+                spellCheck="false"
+              />
             </div>
           </div>
         )}
