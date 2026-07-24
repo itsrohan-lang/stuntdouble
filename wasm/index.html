@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>StuntDouble WASM Sandbox</title>
+    <script src="wasm_exec.js"></script>
+    <script>
+      const go = new Go();
+      WebAssembly.instantiateStreaming(fetch("stuntdouble.wasm"), go.importObject).then(
+        (result) => {
+          go.run(result.instance);
+          
+          console.log("Testing StuntDouble Engine...");
+          const res = window.StuntDouble.evaluate(JSON.stringify({
+            target: "api.stripe.com"
+          }));
+          
+          document.getElementById("output").innerText = JSON.stringify(res, null, 2);
+        }
+      );
+    </script>
+  </head>
+  <body style="font-family: sans-serif;">
+    <h1>StuntDouble in the Browser</h1>
+    <p>Output from WASM evaluation:</p>
+    <pre id="output" style="background: #eee; padding: 10px;"></pre>
+  </body>
+</html>
