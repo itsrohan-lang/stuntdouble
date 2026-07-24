@@ -1,6 +1,6 @@
 {
   "name": "stuntdouble-sandbox-cli",
-  "version": "3.1.2",
+  "version": "3.2.0",
   "description": "Secure AI Agent Sandbox with Docker & eBPF interceptors",
   "main": "bin/stuntdouble.js",
   "bin": {
