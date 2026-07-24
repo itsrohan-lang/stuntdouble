@@ -11,6 +11,16 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initializes a .stuntdouble.yaml config file in the current directory",
 	Run: func(cmd *cobra.Command, args []string) {
+		banner := `
+   _____ __                  __  ____              __    __     
+  / ___// /___  ______  / /_/ __ \____  __  __/ /_  / /__   
+  \__ \/ __/ / / / __ \/ __/ / / / __ \/ / / / __ \/ / _ \  
+ ___/ / /_/ /_/ / / / / /_/ /_/ / /_/ / /_/ / /_/ / /  __/  
+/____/\__/\__,_/_/ /_/\__/_____/\____/\__,_/_.___/_/\___/   
+                                                           
+`
+		fmt.Println(banner)
+		
 		configContent := `version: 1.0
 isolation:
   network: blocked-except-mocks
