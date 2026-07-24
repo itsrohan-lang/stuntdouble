@@ -1,103 +1,116 @@
-# 🛡️ StuntDouble
+<div align="center">
+  <img src="https://raw.githubusercontent.com/itsrohan-lang/stuntdouble/main/docs/assets/logo.png" alt="StuntDouble Logo" width="200" height="200" />
+  <h1>🛡️ StuntDouble</h1>
+  <p><b>Zero-Trust eBPF Sandbox & Control Plane for Autonomous AI Agents</b></p>
+  
+  [![NPM Version](https://img.shields.io/npm/v/stuntdouble-sandbox-cli?color=00f0ff&style=for-the-badge)](https://www.npmjs.com/package/stuntdouble-sandbox-cli)
+  [![License](https://img.shields.io/badge/License-MIT-8a2be2.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+</div>
 
-> **The Ultimate Zero-Trust, eBPF-Powered Enterprise Sandbox for Autonomous AI Agents.**
+<br/>
 
-[![Build Status](https://github.com/itsrohan-lang/stuntdouble/actions/workflows/release.yml/badge.svg)](https://github.com/itsrohan-lang/stuntdouble/actions)
-[![Version](https://img.shields.io/npm/v/stuntdouble-sandbox-cli.svg)](https://npmjs.org/package/stuntdouble-sandbox-cli)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-StuntDouble is a hyper-secure, enterprise-grade execution environment that allows AI coding agents (like Claude, Cursor, OpenDevin, and SWE-agent) to write and execute code on your local machine or cloud infrastructure *without* the risk of destroying databases, wiping hard drives, or exfiltrating API keys.
-
-By leveraging **eBPF** (Linux), **Endpoint Security Framework** (macOS), and **WebAssembly (WASM)**, StuntDouble strictly enforces granular network and filesystem policies dynamically.
+StuntDouble is a military-grade, zero-trust sandbox architecture designed explicitly for running AI coding agents (like Claude Engineer, OpenDevin, and Cursor) safely. It intercepts, audits, and optionally mocks system-level events (Network out, File writes, Exec) using native Linux **eBPF (Extended Berkeley Packet Filter)** before the AI can cause any harm.
 
 ---
 
-## 🌟 The StuntDouble Ecosystem
+## ✨ Features
 
-Over the course of its development, StuntDouble has evolved from a simple CLI into a massive global ecosystem designed for DevOps, Security, and Engineering teams:
+* **🦀 Native eBPF Kernel Probes**: Written in Rust, it drops straight into your Linux Kernel to intercept rogue `cgroup_skb` network packets before they even reach the network interface.
+* **🌐 CTO Control Plane**: A centralized Golang proxy that streams telemetry and enforces JSON-based global Enterprise RBAC policies across thousands of AI instances.
+* **📊 Next.js SOC Dashboard**: Real-time Threat Vector analysis, live audit ledgers, and dynamic policy editors with a sleek hacker-aesthetic UI.
+* **👻 Keploy API Mocking**: Instead of hard-crashing your AI agent when it tries to hit a blocked API (like Stripe or AWS), StuntDouble serves a mocked `200 OK` JSON ghost response so the agent thinks it succeeded and keeps coding!
+* **💻 VS Code Extension**: Provides a seamless IDE integration. If the enterprise policy blocks your agent from exfiltrating data, you get a real-time VS Code alert natively in your editor.
 
-- 💻 **StuntDouble CLI**: The native command-line interface to spin up instant, isolated AI workspaces locally.
-- 🏢 **Control Plane (Go)**: A centralized REST/GraphQL API for CTOs and Security Admins to enforce global Role-Based Access Control (RBAC) policies across all sandboxes.
-- 🐍 **Python SDK (`stunt-python`)**: Programmatically spawn StuntDouble sandboxes directly from Python scripts (perfect for LangChain and LlamaIndex integrations).
-- 🐙 **StuntBot (GitHub App)**: Automatically runs AI agents on Pull Requests inside secure, ephemeral microVMs.
-- ☸️ **Kubernetes Operator (CRDs)**: Native `StuntDoublePolicy` Kubernetes resources that sync dynamically to your cluster.
-- ☁️ **Terraform Provider**: Manage your StuntDouble Control Plane policies globally using Infrastructure-as-Code (IaC).
-- 🚀 **GitHub Action**: Wrap your entire CI/CD pipeline inside the StuntDouble eBPF sandbox with a single YAML step (`itsrohan-lang/stuntdouble-action`).
-- 🖥️ **Desktop App**: A beautiful Electron/React GUI to manage your local sandboxes without touching a terminal.
-- 📊 **Prometheus/Grafana**: Built-in metrics exporter (`/metrics`) to observe global sandbox behaviors and blocked network requests.
-- 🌐 **WebAssembly Engine**: Run StuntDouble policies directly inside the browser or on Cloudflare Workers edge runtimes.
-- 🐧 **StuntOS**: A custom Linux distribution built from scratch via Buildroot, hyper-optimized specifically to run StuntDouble containers at bare-metal speeds.
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TD
+    subgraph "VS Code Environment"
+        A[AI Agent e.g. Claude Code] -->|Shell Commands| B(StuntDouble CLI)
+        E[VS Code Extension] -.->|Polls| C
+    end
+
+    subgraph "Linux Host"
+        B -.->|Docker Exec| F[Isolated Docker Container]
+        F -->|cgroup_skb Outbound| G{Rust eBPF Probe}
+    end
+
+    subgraph "Enterprise Network"
+        G -->|Block/Allow| C[Golang Control Plane :4439]
+        C -->|Mock Response| K[Keploy Mock Engine]
+        C <-->|Audit & Policies| DB[(SQLite / Postgres)]
+    end
+    
+    subgraph "Security Team"
+        D[Next.js Dashboard] <-->|GraphQL / REST| C
+    end
+
+    style G fill:#ef4444,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#00f0ff,stroke:#333,stroke-width:2px,color:#000
+    style K fill:#8a2be2,stroke:#333,stroke-width:2px,color:#fff
+```
 
 ---
 
 ## 🚀 Quick Start
 
 ### 1. Install the CLI
+Install the globally available StuntDouble CLI wrapper via NPM:
 ```bash
 npm install -g stuntdouble-sandbox-cli
-# or via go:
-go install github.com/itsrohan-lang/stuntdouble/cli@latest
 ```
 
-### 2. Initialize your project
+### 2. Start the Enterprise Control Plane
+The Golang proxy handles all telemetry, database auditing, and policy enforcement.
 ```bash
-sd init
+git clone https://github.com/itsrohan-lang/stuntdouble.git
+cd stuntdouble/control-plane
+go run main.go
 ```
-This generates a `.stuntdouble.yaml` policy file in your repository where you can define network rules, allowed agents, and file access paths.
+*(This automatically boots up the Rust eBPF engine in the background!)*
 
-### 3. Run an AI agent securely
+### 3. Launch the SOC Dashboard
+Monitor your agents in real-time.
 ```bash
-sd run claude
+cd stuntdouble/dashboard
+npm install
+npm run dev
 ```
-The agent is now securely jailed inside the StuntDouble environment!
+Open `http://localhost:3000` to access the CTO dashboard.
 
 ---
 
-## 🛠️ Detailed CLI Commands
+## 🛡️ Sandbox an Agent
 
-The `sd` (StuntDouble) CLI is the core orchestration tool for managing your sandboxes.
+To run an AI agent inside the zero-trust environment, simply prefix the command with `sd run`:
 
-| Command | Description | Flags / Options |
-|---------|-------------|-----------------|
-| `sd init` | Initializes a new StuntDouble project by generating the default `.stuntdouble.yaml` policy file and telemetry state. | |
-| `sd run <agent>` | Spawns a highly restricted Docker container and executes the specified AI agent (e.g., `claude`, `bash`) wrapped in eBPF hooks. | `--remote` (Runs in cloud microVM), `--env <image>` (Specify custom Docker runtime image) |
-| `sd daemon` | Runs the StuntDouble background daemon. Used primarily by the GitHub Action and Kubernetes Operator to listen for policy updates. | `--mode <audit\|block\|chaos>`, `--policy <file>` |
-| `sd chaos` | Activates Chaos Monkey Testing. Actively injects simulated network failures and file permission errors to test how resilient your AI agent's error-recovery logic is. | |
-| `sd protocol attest` | Triggers a cryptographic attestation process (via Sigstore/Cosign) to guarantee the loaded sandbox kernel modules have not been tampered with. | |
-
-### Advanced Usage Examples
-
-**Run Claude inside a Python 3.11 environment with Cloud Sync enabled:**
 ```bash
-sd run claude --env python:3.11-alpine --remote
+sd run claude-code
 ```
 
-**Start the Daemon in Audit-only mode for CI/CD:**
-```bash
-sudo sd daemon --mode audit --policy .stuntdouble.yaml
+The StuntDouble CLI will automatically provision an ephemeral, locked-down Docker container, map the current working directory, and pipe standard I/O directly into the container while the eBPF kernel probes monitor all syscalls.
+
+---
+
+## 👻 Keploy Ghost Responses
+
+If your global policy blocks access to `api.stripe.com`, your agent doesn't just crash. StuntDouble intercepts the `CONNECT` request and routes it to the `/api/keploy/mock` endpoint on the Control Plane, returning a synthetic response:
+
+```json
+{
+  "status": "success",
+  "mocked_by": "StuntDouble-Keploy-Integration",
+  "data": {
+    "status": "created",
+    "amount": "0.00"
+  }
+}
 ```
+The AI continues reasoning as if the API call succeeded!
 
 ---
 
-## 🏗️ Architecture Deep Dive
-
-Please see [ARCHITECTURE.md](ARCHITECTURE.md) for detailed system design, component breakdowns, and kernel-level interception diagrams.
-
-### How it works:
-1. **Snapshot**: When you run `sd run`, StuntDouble takes a zero-copy git snapshot of your working directory.
-2. **Jail**: It spawns an isolated Docker container with zero egress network capability (by default).
-3. **Hook**: eBPF/ESF hooks are injected directly into the kernel cgroups to monitor read/write/execute syscalls.
-4. **Mock**: External API calls made by the AI (like AWS or Stripe) are routed to WebAssembly plugins that return safe, mock JSON data.
-5. **Revert**: If the agent hallucinates and destroys the codebase, the user can instantly time-travel back to the pre-run snapshot.
-
----
-
-## 🤝 Contributing & Funding
-
-StuntDouble is an open-source project designed to protect the future of AI engineering. 
-
-To support the development, please check out the **Sponsor** button at the top of the repository, or visit my Ko-fi directly:
-💖 [Support me on Ko-fi](https://ko-fi.com/rdx463)
-
----
-*Built with absolute paranoia by the StuntDouble Core Team.*
+## 📝 License
+MIT License. Built for secure AI innovation.
