@@ -32,7 +32,14 @@ The full architecture diagram and component breakdown can be found in [ARCHITECT
 ## 🚀 Quick Start
 
 ### 1. Install the CLI
-Install the globally available StuntDouble CLI wrapper via NPM:
+Install the globally available StuntDouble CLI wrapper.
+
+**Option A: Standalone Install (Recommended)**
+```bash
+curl -sSL https://raw.githubusercontent.com/itsrohan-lang/stuntdouble/main/install.sh | bash
+```
+
+**Option B: NPM Install**
 ```bash
 npm install -g stuntdouble-sandbox-cli
 ```
