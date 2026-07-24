@@ -47,6 +47,40 @@ export default function Home() {
             </button>
           </div>
         </section>
+
+        {/* Detailed Command Reference */}
+        <section className="w-full mt-32 max-w-4xl flex flex-col gap-8">
+          <div className="text-center mb-8">
+            <h2 className="text-4xl font-bold text-white mb-4">CLI Reference Manual</h2>
+            <p className="text-zinc-400 text-lg">Master the StuntDouble ecosystem with our zero-trust orchestration commands.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#00f0ff] transition-colors group">
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#00f0ff] transition-colors">sd init</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Initializes a new StuntDouble sandbox in the current directory, generating your <code className="text-zinc-300 bg-zinc-800 px-1.5 py-0.5 rounded">.stuntdouble.yaml</code>.</p>
+            </div>
+
+            <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#8a2be2] transition-colors group">
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#8a2be2] transition-colors">sd run &lt;agent&gt;</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Spawns a highly restricted Docker container wrapped in eBPF kernel hooks.</p>
+              <ul className="text-sm text-zinc-500 space-y-2 font-mono">
+                <li>--remote : Offload to StuntDouble Cloud</li>
+                <li>--env : Inject dynamic base runtime</li>
+              </ul>
+            </div>
+
+            <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#00f0ff] transition-colors group">
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#00f0ff] transition-colors">sd daemon</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Starts the background control plane listener. Used by Kubernetes Operators and GitHub Actions to enforce policies dynamically.</p>
+            </div>
+
+            <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#8a2be2] transition-colors group">
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#8a2be2] transition-colors">sd chaos</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Activates Chaos Monkey Testing. Injects simulated network drops and file access denials to benchmark agent recovery logic.</p>
+            </div>
+          </div>
+        </section>
       </main>
       
       <footer className="border-t border-zinc-800 w-full py-12 flex flex-col items-center justify-center text-zinc-500 text-sm z-10 bg-[#05050a] mt-auto">

@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📚 StuntDouble Documentation Site
 
-## Getting Started
+This is the Next.js frontend repository for the official StuntDouble documentation site.
 
-First, run the development server:
+## 🚀 Getting Started
+
+First, install dependencies and run the development server:
 
 ```bash
+cd docs
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Detailed Command Reference
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The StuntDouble CLI (`sd`) provides extreme isolation for AI agents. Below is the comprehensive command manual.
 
-## Learn More
+### `sd init`
+Initializes a new StuntDouble sandbox in the current directory.
+- **Action**: Generates a `.stuntdouble.yaml` and `.stuntdouble.telemetry.json` file.
+- **Usage**: Run this at the root of the codebase where the AI agent will operate.
 
-To learn more about Next.js, take a look at the following resources:
+### `sd run <agent>`
+The primary orchestration command. Wraps the target AI agent inside an eBPF-secured Docker container (or remote cloud MicroVM).
+- **Arguments**: `<agent>` (e.g. `claude`, `cursor`, `opendevin`, `bash`).
+- **Options**:
+  - `--remote, -r`: Offloads the sandbox to the StuntDouble Enterprise Cloud for execution.
+  - `--env, -e`: Dynamically injects a specific base runtime image (default: `node:20-alpine`).
+- **Example**: `sd run claude --env python:3.11-alpine`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### `sd daemon`
+Starts the background Control Plane listener. Used heavily in CI/CD pipelines (like our GitHub Action) or Kubernetes Operators to enforce rules dynamically.
+- **Options**:
+  - `--mode`: Enforcement mode (`audit`, `block`, or `chaos`). Default is `block`.
+  - `--policy`: Path to the `.stuntdouble.yaml` configuration.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### `sd chaos`
+Activates Chaos Monkey Testing. This command actively injects simulated network drops, file-permission denials, and artificial latency to test how well the AI agent's error-recovery loop handles restricted environments.
 
-## Deploy on Vercel
+### `sd protocol attest`
+Performs a cryptographic attestation on the loaded sandbox kernel modules (via Sigstore) to guarantee that they have not been maliciously tampered with prior to agent execution.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🌐 Enterprise Integrations
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Python SDK**: Import `stuntbot` in your LangChain workflows to spawn secure containers directly via Python.
+- **Kubernetes Operator**: Apply `StuntDoublePolicy` CRDs directly to your cluster to enforce global network policies.
+- **Terraform Provider**: Manage API keys and global RBAC policies on the Control Plane using standard IaC.
+
+---
+*Generated for the StuntDouble ecosystem.*
