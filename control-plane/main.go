@@ -122,6 +122,28 @@ func handleTelemetry(w http.ResponseWriter, r *http.Request) {
 
 func handlePolicy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	mu.Lock()
+	defer mu.Unlock()
+
+	if r.Method == http.MethodPost {
+		var newPolicy EnterpriseRBACPolicy
+		if err := json.NewDecoder(r.Body).Decode(&newPolicy); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+		globalPolicy = newPolicy
+		log.Printf("🚀 CTO Dashboard deployed new global policy: %+v", globalPolicy)
+	}
+
 	json.NewEncoder(w).Encode(globalPolicy)
 }
 

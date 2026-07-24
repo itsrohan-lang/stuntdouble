@@ -6,6 +6,27 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [telemetry, setTelemetry] = useState({ total_runs: 0, blocked_commands: 0 });
+  const [isDeploying, setIsDeploying] = useState(false);
+  
+  const deployPolicy = async () => {
+    setIsDeploying(true);
+    try {
+      await fetch('http://localhost:4439/policy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          org_id: "ent_global_updated",
+          blocked_ports: [5432, 27017, 3306, 6379, 8080],
+          allowed_agents: ["claude", "cursor", "opendevin"],
+          strict_egress: true
+        })
+      });
+      setTimeout(() => setIsDeploying(false), 1000);
+    } catch (e) {
+      console.error(e);
+      setIsDeploying(false);
+    }
+  };
 
   // Simulated live data feed
   const [data, setData] = useState([
@@ -151,7 +172,9 @@ export default function Dashboard() {
                 <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Access Policies</h1>
                 <p className="text-zinc-400">Manage Zero-Trust rules distributed to all StuntDouble eBPF nodes.</p>
               </div>
-              <button className="bg-[#00f0ff] hover:bg-[#00f0ff]/80 text-black px-6 py-2 rounded-xl font-bold transition">Deploy Policy</button>
+              <button onClick={deployPolicy} disabled={isDeploying} className="bg-[#00f0ff] hover:bg-[#00f0ff]/80 disabled:opacity-50 text-black px-6 py-2 rounded-xl font-bold transition">
+                {isDeploying ? 'Deploying...' : 'Deploy Policy'}
+              </button>
             </header>
             
             <div className="bg-[#0a0a0f] border border-zinc-800/80 rounded-2xl p-6 font-mono text-sm overflow-hidden">
