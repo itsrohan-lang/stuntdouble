@@ -1,71 +1,37 @@
-# 🏗 Architecture & System Design
+# 🏗️ StuntDouble Architecture
 
-StuntDouble acts as an orchestration middleware between the local host system, the container runtime, and the AI agent's standard I/O.
-
-## High-Level Component Diagram
+StuntDouble is designed to intercept and monitor AI agent actions at the lowest possible level (the kernel) while providing a high-level, human-readable SOC dashboard for the security team.
 
 ```mermaid
 graph TD
-    User((Developer)) --> |"sd claude"| SD[StuntDouble CLI Wrapper]
-    
-    subgraph Host System
-        SD
-        Config[.stuntdouble.yaml]
+    subgraph "VS Code Environment"
+        A[AI Agent e.g. Claude Code] -->|Shell Commands| B(StuntDouble CLI)
+        E[VS Code Extension] -.->|Polls| C
+    end
+
+    subgraph "Linux Host"
+        B -.->|Docker Exec| F[Isolated Docker Container]
+        F -->|cgroup_skb Outbound| G{Rust eBPF Probe}
+    end
+
+    subgraph "Enterprise Network"
+        G -->|Block/Allow| C[Golang Control Plane :4439]
+        C -->|Mock Response| K[Keploy Mock Engine]
+        C <-->|Audit & Policies| DB[(SQLite / Postgres)]
     end
     
-    subgraph Execution Context [Ephemeral Docker MicroVM]
-        Agent[Claude Code / Agent CLI]
-        MockProxy[Keploy eBPF Proxy Layer]
+    subgraph "Security Team"
+        D[Next.js Dashboard] <-->|GraphQL / REST| C
     end
-    
-    SD -->|Parses Config| Config
-    SD -->|Provisions & Mounts| ExecutionContext
-    Agent -->|Attempts DB Call| MockProxy
-    
-    MockProxy -.->|Intercepts & Returns Mock Data| Agent
-    MockProxy -.->|Blocked| RealDB[(Local / Prod DB)]
+
+    style G fill:#ef4444,stroke:#333,stroke-width:2px,color:#fff
+    style C fill:#00f0ff,stroke:#333,stroke-width:2px,color:#000
+    style K fill:#8a2be2,stroke:#333,stroke-width:2px,color:#fff
 ```
 
-## Cross-Platform Kernel Interception
-
-StuntDouble uses a multi-layered defense-in-depth approach, combining Docker namespace isolation with native kernel-level packet interception across Linux, macOS, and Windows.
-
-```mermaid
-graph TD
-    A[AI Coding Agent] -->|Executes Command| B(StuntDouble CLI)
-    B --> C{OS Detection}
-    
-    C -->|Linux| D[eBPF Kernel Hook]
-    C -->|macOS| E[Endpoint Security ESF]
-    C -->|Windows| F[WFP Driver]
-
-    D --> G[Docker Container]
-    E --> G
-    F --> G
-
-    G -->|Outbound DB Call| H{Keploy WASM Proxy / Plugin Engine}
-    H -->|Malicious| I[Blackhole]
-    H -->|Safe/Mocked| J[Return Synthetic HTTP 200]
-```
-## Core Components
-
-### 1. The CLI Wrapper (`cmd/sd`)
-Written in Go (for portability) or Node.js. It acts as the primary entry point. 
-* Parses `.stuntdouble.yaml`.
-* Verifies Docker daemon status.
-* Drops Linux root capabilities (`--cap-drop=ALL`).
-* Mounts the current working directory safely.
-
-### 2. The Execution Engine
-Instead of relying on the host OS sandboxing (like Apple's `Seatbelt`), StuntDouble enforces containerization. It builds an ephemeral, headless Alpine/Ubuntu container matching the host's requirements, drops the agent inside, and pipes `stdin/stdout` directly to the host terminal to ensure perfect UX.
-
-### 3. The Stunt Layer (Mocks & Network)
-Powered by Keploy (or a similar eBPF-based proxy). 
-* When the container spins up, StuntDouble injects a proxy sidecar.
-* It hooks into the container's network namespace.
-* If an agent executes `psql -c "DROP TABLE users"`, the eBPF layer intercepts the port 5432 request, matches it against recorded mock schemas, and returns a synthetic `DROP TABLE` success response without touching the real network interface.
-
-## Security Model
-* **Filesystem:** Only the current working directory is mounted. Global SSH/AWS keys (`~/.ssh`) are completely inaccessible.
-* **Network:** Default-deny egress policy for known database ports.
-* **Compute:** Hard CPU and memory limits set via Docker to prevent agent runaway loops.
+### Components
+1. **VS Code Extension & CLI**: Wraps the AI agent and forces it to run inside a Docker container.
+2. **Rust eBPF Probe**: Sits in the Linux kernel and intercepts `cgroup_skb` network packets before they leave the container.
+3. **Golang Control Plane**: A centralized proxy that receives telemetry from the eBPF probe, enforces JSON policies, and writes to an SQLite audit database.
+4. **Keploy Mock Engine**: Injects ghost responses for blocked APIs so agents don't crash.
+5. **Next.js Dashboard**: A React frontend for the CTO to view live analytics and block logs.
