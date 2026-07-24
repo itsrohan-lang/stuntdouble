@@ -5,7 +5,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	activeAgents = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "stuntdouble_active_agents_total",
+		Help: "The total number of active StuntDouble agents globally",
+	})
+	blockedRequests = prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "stuntdouble_blocked_network_requests_total",
+		Help: "The total number of network requests blocked by StuntDouble eBPF",
+	})
+)
+
+func init() {
+	prometheus.MustRegister(activeAgents)
+	prometheus.MustRegister(blockedRequests)
+}
 
 // EnterpriseRBACPolicy represents global sandbox policies set by a CTO.
 type EnterpriseRBACPolicy struct {
@@ -15,15 +36,41 @@ type EnterpriseRBACPolicy struct {
 	StrictEgress  bool     `json:"strict_egress"`
 }
 
+type TelemetryData struct {
+	TotalRuns       int       `json:"total_runs"`
+	BlockedCommands int       `json:"blocked_commands"`
+	LastRun         time.Time `json:"last_run"`
+}
+
+var (
+	mu            sync.Mutex
+	globalMetrics TelemetryData
+)
+
 func handleTelemetry(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	var data TelemetryData
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	mu.Lock()
+	globalMetrics.TotalRuns += data.TotalRuns
+	globalMetrics.BlockedCommands += data.BlockedCommands
+	globalMetrics.LastRun = data.LastRun
 	
-	fmt.Println("☁️  [Control Plane] Received Telemetry payload from local StuntDouble CLI")
+	// Update Prometheus metrics
+	activeAgents.Set(float64(globalMetrics.TotalRuns)) // Simplified mapping
+	blockedRequests.Add(float64(data.BlockedCommands))
+	mu.Unlock()
+
+	log.Printf("Received telemetry: %+v", data)
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{"status":"synced"}`))
 }
 
 func handlePolicy(w http.ResponseWriter, r *http.Request) {
@@ -41,6 +88,7 @@ func handlePolicy(w http.ResponseWriter, r *http.Request) {
 func main() {
 	http.HandleFunc("/telemetry", handleTelemetry)
 	http.HandleFunc("/policy", handlePolicy)
+	http.Handle("/metrics", promhttp.Handler())
 	
 	port := "4439"
 	fmt.Printf("🏢 StuntDouble Enterprise Control Plane active on port %s\n", port)
