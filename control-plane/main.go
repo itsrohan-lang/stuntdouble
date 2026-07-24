@@ -209,6 +209,27 @@ func handleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleKeployMock(w http.ResponseWriter, r *http.Request) {
+	// Simulate Keploy intercepting a blocked outbound request and returning a ghost 200 OK
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-StuntDouble-Mocked", "true")
+	w.Header().Set("X-Keploy-Interceptor", "active")
+	w.WriteHeader(http.StatusOK)
+
+	// Return a generic success payload so the AI agent thinks its API call worked
+	mockResponse := map[string]interface{}{
+		"status":    "success",
+		"id":        "evt_mocked_1337",
+		"message":   "This is a ghost response injected by Keploy. The actual network request was dropped.",
+		"mocked_by": "StuntDouble-Keploy-Integration",
+		"data": map[string]string{
+			"status": "created",
+			"amount": "0.00",
+		},
+	}
+	json.NewEncoder(w).Encode(mockResponse)
+}
+
 func main() {
 	var err error
 	db, err = gorm.Open(sqlite.Open("stuntdouble_audit.db"), &gorm.Config{})
@@ -221,6 +242,7 @@ func main() {
 	http.HandleFunc("/policy", handlePolicy)
 	http.HandleFunc("/api/stats", handleStats)
 	http.HandleFunc("/api/audit", handleAuditLogs)
+	http.HandleFunc("/api/keploy/mock", handleKeployMock)
 	http.HandleFunc("/graphql", handleGraphQL)
 	http.Handle("/metrics", promhttp.Handler())
 	
