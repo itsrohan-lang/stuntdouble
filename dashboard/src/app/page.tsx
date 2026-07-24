@@ -111,7 +111,7 @@ export default function Dashboard() {
 
       <nav className="relative z-10 border-b border-zinc-800/50 bg-[#0a0a0f]/80 backdrop-blur-xl px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <ShieldAlert className="w-8 h-8 text-[#00f0ff]" />
+          <img src="/logo.png" className="w-10 h-10 rounded-lg shadow-[0_0_15px_rgba(138,43,226,0.5)]" alt="StuntDouble Logo" />
           <span className="text-xl font-black text-white tracking-tight">StuntDouble <span className="text-zinc-500 font-medium">Control Plane</span></span>
         </div>
         <div className="flex items-center gap-6 text-sm font-medium">
