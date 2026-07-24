@@ -22,6 +22,9 @@ npm/.npm/
 # Build Artifacts & Binaries
 stuntdouble-*
 /cli/stuntdouble-*
+/control-plane/cp
+/control-plane/cp-*
+/core-ebpf/target/
 
 # StuntDouble Local State
 .stuntdouble.telemetry.json
