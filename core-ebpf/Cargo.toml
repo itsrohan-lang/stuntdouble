@@ -1,0 +1,10 @@
+[package]
+name = "core-ebpf"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+aya = "0.12.0"
+aya-log = "0.2.0"
+env_logger = "0.11.11"
+log = "0.4.33"
