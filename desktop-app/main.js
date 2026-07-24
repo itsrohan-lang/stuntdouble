@@ -1,6 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, Notification } = require('electron');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
+const http = require('http');
+
+let tray = null;
+let lastSeenLogId = 0;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -16,15 +20,61 @@ function createWindow() {
   win.loadFile('index.html');
 }
 
-app.whenReady().then(createWindow);
+function createTray() {
+  // Use a generic icon or the official logo if available
+  tray = new Tray(path.join(__dirname, '..', 'docs', 'assets', 'logo.png'));
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'StuntDouble Engine: Active', type: 'normal', enabled: false },
+    { type: 'separator' },
+    { label: 'Open Dashboard', click: () => createWindow() },
+    { label: 'Quit', click: () => app.quit() }
+  ]);
+  tray.setToolTip('StuntDouble Zero-Trust Sandbox');
+  tray.setContextMenu(contextMenu);
+}
+
+function startAuditPolling() {
+  setInterval(() => {
+    http.get('http://localhost:4439/api/audit', (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const logs = JSON.parse(data);
+          if (logs && logs.length > 0) {
+            const latestLog = logs[0];
+            if (latestLog.id > lastSeenLogId) {
+              if (lastSeenLogId !== 0 && latestLog.status.includes('Blocked')) {
+                new Notification({
+                  title: '🚨 StuntDouble Security Alert',
+                  body: `Agent '${latestLog.agent_id}' was blocked from accessing '${latestLog.target}'!`,
+                  icon: path.join(__dirname, '..', 'docs', 'assets', 'logo.png')
+                }).show();
+              }
+              lastSeenLogId = latestLog.id;
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      });
+    }).on('error', () => {
+      // ignore
+    });
+  }, 3000);
+}
+
+app.whenReady().then(() => {
+  createWindow();
+  createTray();
+  startAuditPolling();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
-
-const { spawn } = require('child_process');
 
 // IPC handler to start sandbox
 ipcMain.on('start-sandbox', (event, agent) => {
