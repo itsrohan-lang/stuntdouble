@@ -34,11 +34,12 @@ ipcMain.on('start-sandbox', (event, agent) => {
   const localSdPath = path.join(__dirname, '..', 'cli', 'sd');
   
   // Run the command using spawn to stream output in real-time
-  const child = spawn(localSdPath, ['run', agent]);
+  // Use --remote to offload to StuntDouble Cloud, preventing slow local Docker pulls
+  const child = spawn(localSdPath, ['run', agent, '--remote']);
 
   // Fallback if localSdPath fails to spawn
   child.on('error', (err) => {
-    const fallback = spawn('sd', ['run', agent]);
+    const fallback = spawn('sd', ['run', agent, '--remote']);
     streamChild(fallback, event);
   });
 
