@@ -18,8 +18,8 @@
         "title": "StuntDouble: Run Agent in Sandbox"
       },
       {
-        "command": "stuntdouble.rewind",
-        "title": "StuntDouble: Time-Travel Rewind"
+        "command": "stuntdouble.toggleStealth",
+        "title": "StuntDouble: Toggle Stealth Mode (Intercept All Terminals)"
       },
       {
         "command": "stuntdouble.dashboard",

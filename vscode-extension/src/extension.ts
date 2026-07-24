@@ -1,9 +1,11 @@
 import * as vscode from 'vscode';
 
+let isStealthModeActive = false;
+
 export function activate(context: vscode.ExtensionContext) {
     console.log('StuntDouble VS Code extension is now active!');
 
-    // Command 1: Run an Agent
+    // Command: Run an Agent
     let disposableRun = vscode.commands.registerCommand('stuntdouble.runAgent', async () => {
         const agentName = await vscode.window.showInputBox({
             prompt: 'Enter the AI agent to sandbox (e.g., claude, aider, sh)',
@@ -13,20 +15,34 @@ export function activate(context: vscode.ExtensionContext) {
         if (agentName) {
             const terminal = vscode.window.createTerminal('StuntDouble Sandbox');
             terminal.show();
-            terminal.sendText(`stuntdouble run ${agentName}`);
+            // Changed from stuntdouble to sd
+            terminal.sendText(`sd run ${agentName}`);
             vscode.window.showInformationMessage(`Locking down kernel and starting ${agentName}...`);
         }
     });
 
-    // Command 2: Time-Travel Rewind
-    let disposableRewind = vscode.commands.registerCommand('stuntdouble.rewind', () => {
-        const terminal = vscode.window.createTerminal('StuntDouble Rewind');
-        terminal.show();
-        terminal.sendText(`stuntdouble rewind`);
-        vscode.window.showInformationMessage(`Initiating zero-copy time travel...`);
+    // Command: Toggle Stealth Terminal Interceptor
+    let disposableStealth = vscode.commands.registerCommand('stuntdouble.toggleStealth', () => {
+        isStealthModeActive = !isStealthModeActive;
+        if (isStealthModeActive) {
+            vscode.window.showInformationMessage('🛡️ StuntDouble Stealth Mode ACTIVATED. All new terminals will be intercepted and sandboxed.');
+        } else {
+            vscode.window.showInformationMessage('⚠️ StuntDouble Stealth Mode DEACTIVATED.');
+        }
     });
 
-    // Command 3: Open Dashboard WebView
+    // Event: Intercept Terminal Creation
+    vscode.window.onDidOpenTerminal((terminal: vscode.Terminal) => {
+        if (isStealthModeActive && terminal.name !== 'StuntDouble Sandbox') {
+            // Wait a split second for the shell to initialize, then inject the sandbox wrapper
+            setTimeout(() => {
+                terminal.sendText(`sd run bash`);
+                vscode.window.showWarningMessage(`StuntDouble intercepted terminal: ${terminal.name}`);
+            }, 500);
+        }
+    });
+
+    // Command: Open Dashboard WebView
     let disposableDashboard = vscode.commands.registerCommand('stuntdouble.dashboard', () => {
         const panel = vscode.window.createWebviewPanel(
             'stuntDoubleDashboard',
@@ -35,7 +51,6 @@ export function activate(context: vscode.ExtensionContext) {
             { enableScripts: true }
         );
 
-        // Load the local Next.js dashboard inside VS Code
         panel.webview.html = `
             <!DOCTYPE html>
             <html lang="en">
@@ -48,13 +63,13 @@ export function activate(context: vscode.ExtensionContext) {
                 </style>
             </head>
             <body>
-                <iframe src="http://localhost:3000/dashboard"></iframe>
+                <iframe src="http://localhost:3000/"></iframe>
             </body>
             </html>
         `;
     });
 
-    context.subscriptions.push(disposableRun, disposableRewind, disposableDashboard);
+    context.subscriptions.push(disposableRun, disposableStealth, disposableDashboard);
 }
 
 export function deactivate() {}
