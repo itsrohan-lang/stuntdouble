@@ -1,0 +1,17 @@
+# Default owners for everything
+*       @itsrohan-lang
+
+# Core eBPF (Rust) team
+/core-ebpf/  @itsrohan-lang
+
+# Control Plane (Golang) team
+/control-plane/  @itsrohan-lang
+/cli/ @itsrohan-lang
+
+# Frontend (Dashboard & Website) team
+/dashboard/ @itsrohan-lang
+/docs/ @itsrohan-lang
+
+# Infrastructure
+/terraform-provider-stuntdouble/ @itsrohan-lang
+/k8s-operator/ @itsrohan-lang
