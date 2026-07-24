@@ -18,11 +18,11 @@ export default function CommandsPage() {
         
         <div className="flex flex-col gap-6 w-full">
           {[
-            { cmd: 'stuntdouble run [agent]', desc: 'Wraps an agent (like `claude` or `aider`) in a hardware-isolated microVM with native TTY streaming. Takes a zero-copy snapshot of your files before executing.' },
-            { cmd: 'stuntdouble rewind', desc: 'Instantly restores your entire workspace to the exact state it was in before the last agent ran. Cleans up all rogue files.' },
-            { cmd: 'stuntdouble swarm [agents...]', desc: 'Orchestrates a team of autonomous agents inside StuntNet—an internal, internet-blocked Docker bridge network.' },
-            { cmd: 'stuntdouble serve', desc: 'Boots the local Control Plane API on port 8080 to power the visual web dashboard.' },
-            { cmd: 'stuntdouble login [token]', desc: 'Authenticates with StuntDouble Enterprise Cloud to sync global telemetry for your engineering team.' },
+            { cmd: 'sd init', desc: 'Initializes a new StuntDouble sandbox in the current directory, generating a .stuntdouble.yaml config file and telemetry state files.' },
+            { cmd: 'sd run <agent>', desc: 'Wraps an agent (like `claude`, `bash`) in a hardware-isolated microVM or local Docker container wrapped in eBPF hooks. Supports --remote and --env flags.' },
+            { cmd: 'sd daemon', desc: 'Starts the background Control Plane listener (Daemon). Used by Kubernetes Operators and GitHub Actions to enforce policies dynamically via --mode and --policy flags.' },
+            { cmd: 'sd chaos', desc: 'Activates Chaos Monkey Testing. Actively injects simulated network drops and file permission denials to benchmark how well your agent recovers.' },
+            { cmd: 'sd protocol attest', desc: 'Cryptographically verifies loaded kernel modules via Sigstore/Cosign to guarantee the sandbox environment has not been tampered with.' },
           ].map((item, i) => (
             <div key={i} className="glass-card p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between border-zinc-800/50 hover:bg-zinc-900/50 transition">
               <code className="text-[#00f0ff] font-mono text-xl font-bold bg-[#00f0ff]/10 px-4 py-2 rounded-lg mb-4 lg:mb-0">{item.cmd}</code>
