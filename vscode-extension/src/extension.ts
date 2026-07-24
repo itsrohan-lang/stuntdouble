@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as http from 'http';
 
 let isStealthModeActive = false;
 
@@ -68,6 +69,34 @@ export function activate(context: vscode.ExtensionContext) {
             </html>
         `;
     });
+
+    let lastSeenLogId = 0;
+
+    // Background polling for new blocks from Control Plane
+    setInterval(() => {
+        http.get('http://localhost:4439/api/audit', (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const logs = JSON.parse(data);
+                    if (logs && logs.length > 0) {
+                        const latestLog = logs[0];
+                        if (latestLog.id > lastSeenLogId) {
+                            if (lastSeenLogId !== 0 && latestLog.status.includes('Blocked')) {
+                                vscode.window.showWarningMessage(`🚨 StuntDouble Blocked Agent! The agent '${latestLog.agent_id}' attempted to access '${latestLog.target}' but was intercepted by enterprise policy.`);
+                            }
+                            lastSeenLogId = latestLog.id;
+                        }
+                    }
+                } catch (e) {
+                    // Control Plane might not be running yet
+                }
+            });
+        }).on('error', () => {
+            // Silently ignore if Control Plane is not running
+        });
+    }, 3000);
 
     context.subscriptions.push(disposableRun, disposableStealth, disposableDashboard);
 }
