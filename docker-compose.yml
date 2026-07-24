@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  control-plane:
+    build: 
+      context: ./control-plane
+    ports:
+      - "4439:4439"
+    volumes:
+      - stunt_audit_data:/app
+    environment:
+      - GIN_MODE=release
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: ./dashboard
+    ports:
+      - "3000:3000"
+    depends_on:
+      - control-plane
+    environment:
+      - NEXT_PUBLIC_CONTROL_PLANE_URL=http://localhost:4439
+    restart: unless-stopped
+
+volumes:
+  stunt_audit_data:
+    description: Persistent volume for SQLite audit logs
