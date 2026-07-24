@@ -1,0 +1,12 @@
+[package]
+name = "stunt-ebpf-kernel"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+aya-ebpf = "0.1.0"
+aya-log-ebpf = "0.1.0"
+
+[features]
+default = []
