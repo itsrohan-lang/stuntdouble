@@ -49,3 +49,29 @@ jobs:
           files: cli/stuntdouble-*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  npm-publish:
+    name: Publish VS Code Extension to NPM
+    runs-on: ubuntu-latest
+    needs: build-and-release
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install and Build Extension
+        working-directory: ./vscode-extension
+        run: |
+          npm install
+          npm run compile
+
+      - name: Publish to NPM
+        working-directory: ./vscode-extension
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
