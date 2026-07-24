@@ -25,32 +25,7 @@ StuntDouble is a military-grade, zero-trust sandbox architecture designed explic
 
 ## 🏗️ Architecture
 
-```mermaid
-graph TD
-    subgraph "VS Code Environment"
-        A[AI Agent e.g. Claude Code] -->|Shell Commands| B(StuntDouble CLI)
-        E[VS Code Extension] -.->|Polls| C
-    end
-
-    subgraph "Linux Host"
-        B -.->|Docker Exec| F[Isolated Docker Container]
-        F -->|cgroup_skb Outbound| G{Rust eBPF Probe}
-    end
-
-    subgraph "Enterprise Network"
-        G -->|Block/Allow| C[Golang Control Plane :4439]
-        C -->|Mock Response| K[Keploy Mock Engine]
-        C <-->|Audit & Policies| DB[(SQLite / Postgres)]
-    end
-    
-    subgraph "Security Team"
-        D[Next.js Dashboard] <-->|GraphQL / REST| C
-    end
-
-    style G fill:#ef4444,stroke:#333,stroke-width:2px,color:#fff
-    style C fill:#00f0ff,stroke:#333,stroke-width:2px,color:#000
-    style K fill:#8a2be2,stroke:#333,stroke-width:2px,color:#fff
-```
+The full architecture diagram and component breakdown can be found in [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ---
 
