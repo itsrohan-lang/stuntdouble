@@ -30,6 +30,10 @@ jobs:
       working-directory: ${{ matrix.directory }}
       run: |
         go mod tidy
+        if [ "${{ matrix.directory }}" = "wasm" ]; then
+          export GOOS=js
+          export GOARCH=wasm
+        fi
         go test -v ./...
 
   test-node:
