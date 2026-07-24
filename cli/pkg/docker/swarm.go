@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
@@ -41,6 +42,10 @@ func (sdc *StuntDockerClient) SpawnSwarm(ctx context.Context, agents []string, m
 		resp, err := sdc.cli.ContainerCreate(ctx, &container.Config{
 			Image: "node:20-alpine",
 			Cmd:   []string{"sh", "-c", agentCmdStr},
+			Env: []string{
+				"ANTHROPIC_API_KEY=" + os.Getenv("ANTHROPIC_API_KEY"),
+				"OPENAI_API_KEY=" + os.Getenv("OPENAI_API_KEY"),
+			},
 			Labels: map[string]string{
 				"stuntdouble.swarm": "true",
 			},
