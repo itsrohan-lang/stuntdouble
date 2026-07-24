@@ -11,6 +11,8 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 var (
@@ -22,7 +24,17 @@ var (
 		Name: "stuntdouble_blocked_network_requests_total",
 		Help: "The total number of network requests blocked by StuntDouble eBPF",
 	})
+	db *gorm.DB
 )
+
+type AuditLog struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	AgentID   string    `json:"agent_id"`
+	Target    string    `json:"target"`
+	Action    string    `json:"action"`
+	Status    string    `json:"status"`
+	CreatedAt time.Time `json:"created_at"`
+}
 
 func init() {
 	prometheus.MustRegister(activeAgents)
@@ -172,10 +184,36 @@ func handleGraphQL(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func handleAuditLogs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	if r.Method == http.MethodPost {
+		var logEntry AuditLog
+		if err := json.NewDecoder(r.Body).Decode(&logEntry); err == nil {
+			db.Create(&logEntry)
+			w.WriteHeader(http.StatusCreated)
+			return
+		}
+	} else if r.Method == http.MethodGet {
+		var logs []AuditLog
+		db.Order("created_at desc").Limit(50).Find(&logs)
+		json.NewEncoder(w).Encode(logs)
+	}
+}
+
 func main() {
+	var err error
+	db, err = gorm.Open(sqlite.Open("stuntdouble_audit.db"), &gorm.Config{})
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	db.AutoMigrate(&AuditLog{})
+
 	http.HandleFunc("/telemetry", handleTelemetry)
 	http.HandleFunc("/policy", handlePolicy)
 	http.HandleFunc("/api/stats", handleStats)
+	http.HandleFunc("/api/audit", handleAuditLogs)
 	http.HandleFunc("/graphql", handleGraphQL)
 	http.Handle("/metrics", promhttp.Handler())
 	
