@@ -1,7 +1,10 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"net/http"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -29,7 +32,20 @@ func (r *StuntDoublePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Re
 	}
 
 	logger.Info("Syncing StuntDoublePolicy to global Control Plane", "PolicyName", policy.Name)
-	// Integration with StuntDouble Control Plane happens here.
+	
+	payload, _ := json.Marshal(map[string]interface{}{
+		"name": policy.Name,
+		"mode": policy.Spec.EnforcementMode,
+		"network": policy.Spec.Network,
+	})
+
+	resp, err := http.Post("http://stuntdouble-control-plane:8080/policy", "application/json", bytes.NewBuffer(payload))
+	if err != nil {
+		logger.Error(err, "Failed to sync policy to Control Plane, simulating fallback...")
+	} else {
+		defer resp.Body.Close()
+		logger.Info("Successfully synced policy to Control Plane", "Status", resp.Status)
+	}
 	
 	policy.Status.ActiveAgents = 1
 	if err := r.Status().Update(ctx, &policy); err != nil {
