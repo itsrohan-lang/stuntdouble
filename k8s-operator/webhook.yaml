@@ -1,0 +1,23 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: stuntdouble-injector
+webhooks:
+  - name: inject.stuntdouble.io
+    clientConfig:
+      service:
+        name: stuntdouble-webhook-service
+        namespace: stuntdouble-system
+        path: "/mutate"
+      caBundle: "Cg=="
+    rules:
+      - operations: ["CREATE"]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+    failurePolicy: Fail
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
+    namespaceSelector:
+      matchLabels:
+        stuntdouble.io/sandbox: "enabled"
