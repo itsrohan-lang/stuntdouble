@@ -4,6 +4,7 @@ import { Activity, ShieldAlert, Users, ServerCrash, Terminal, Lock, Globe } from
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
   const [telemetry, setTelemetry] = useState({ total_runs: 0, blocked_commands: 0 });
 
   // Simulated live data feed
@@ -32,9 +33,9 @@ export default function Dashboard() {
           <span className="text-xl font-black text-white tracking-tight">StuntDouble <span className="text-zinc-500 font-medium">Control Plane</span></span>
         </div>
         <div className="flex items-center gap-6 text-sm font-medium">
-          <a href="#" className="text-white">Overview</a>
-          <a href="#" className="text-zinc-500 hover:text-zinc-300 transition">Policies</a>
-          <a href="#" className="text-zinc-500 hover:text-zinc-300 transition">Audit Logs</a>
+          <button onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Overview</button>
+          <button onClick={() => setActiveTab('policies')} className={activeTab === 'policies' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Policies</button>
+          <button onClick={() => setActiveTab('audit')} className={activeTab === 'audit' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Audit Logs</button>
           <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8a2be2] to-[#00f0ff] flex items-center justify-center text-white font-bold ml-4 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
             CTO
           </div>
@@ -42,101 +43,194 @@ export default function Dashboard() {
       </nav>
 
       <main className="relative z-10 p-8 max-w-7xl mx-auto space-y-8">
-        <header className="mb-10">
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Global Security Posture</h1>
-          <p className="text-zinc-400 text-lg">Real-time telemetry across all organizational AI sandboxes.</p>
-        </header>
+        
+        {activeTab === 'overview' && (
+          <>
+            <header className="mb-10">
+              <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Global Security Posture</h1>
+              <p className="text-zinc-400 text-lg">Real-time telemetry across all organizational AI sandboxes.</p>
+            </header>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#00f0ff]/50 transition duration-300 group">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-zinc-400 font-medium">Total Agent Runs</span>
-              <Terminal className="w-5 h-5 text-zinc-500 group-hover:text-[#00f0ff] transition" />
-            </div>
-            <div className="text-4xl font-bold text-white">{telemetry.total_runs.toLocaleString()}</div>
-            <div className="text-sm text-[#00f0ff] mt-2 font-medium">+14% from last week</div>
-          </div>
-          
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#ef4444]/50 transition duration-300 group">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-zinc-400 font-medium">Blocked Requests</span>
-              <ShieldAlert className="w-5 h-5 text-zinc-500 group-hover:text-[#ef4444] transition" />
-            </div>
-            <div className="text-4xl font-bold text-white">{telemetry.blocked_commands.toLocaleString()}</div>
-            <div className="text-sm text-[#ef4444] mt-2 font-medium">12 critical severity</div>
-          </div>
-
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#8a2be2]/50 transition duration-300 group">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-zinc-400 font-medium">Active Sandboxes</span>
-              <Activity className="w-5 h-5 text-zinc-500 group-hover:text-[#8a2be2] transition" />
-            </div>
-            <div className="text-4xl font-bold text-white">42</div>
-            <div className="text-sm text-zinc-500 mt-2 font-medium">Across 3 clusters</div>
-          </div>
-
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#00f0ff]/50 transition duration-300 group">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-zinc-400 font-medium">Enforcement Mode</span>
-              <Lock className="w-5 h-5 text-zinc-500 group-hover:text-[#00f0ff] transition" />
-            </div>
-            <div className="text-4xl font-bold text-white">Strict</div>
-            <div className="text-sm text-[#00f0ff] mt-2 font-medium">eBPF Blocking Enabled</div>
-          </div>
-        </div>
-
-        {/* Charts & Logs */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xl font-bold text-white">Blocked Outbound Connections</h2>
-              <span className="px-3 py-1 bg-[#ef4444]/10 text-[#ef4444] text-xs font-bold rounded-full border border-[#ef4444]/20 uppercase tracking-wider">Live</span>
-            </div>
-            <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={data}>
-                  <defs>
-                    <linearGradient id="colorBlocked" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
-                  <XAxis dataKey="time" stroke="#52525b" tick={{fill: '#71717a'}} axisLine={false} tickLine={false} />
-                  <YAxis stroke="#52525b" tick={{fill: '#71717a'}} axisLine={false} tickLine={false} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px', color: '#fff' }}
-                    itemStyle={{ color: '#ef4444' }}
-                  />
-                  <Area type="monotone" dataKey="blocked" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorBlocked)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl flex flex-col">
-            <h2 className="text-xl font-bold text-white mb-6">Recent Violations</h2>
-            <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-              {[
-                { target: 'api.stripe.com', agent: 'claude-code', time: '2m ago' },
-                { target: 'postgres:5432', agent: 'opendevin', time: '14m ago' },
-                { target: 'github.com/private', agent: 'cursor', time: '1h ago' },
-                { target: 's3.amazonaws.com', agent: 'aider', time: '3h ago' },
-              ].map((log, i) => (
-                <div key={i} className="p-4 rounded-2xl bg-[#18181b] border border-zinc-800/50 flex items-center justify-between group hover:border-[#ef4444]/30 transition">
-                  <div>
-                    <div className="font-mono text-sm text-[#ef4444] font-medium">{log.target}</div>
-                    <div className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
-                      <Terminal className="w-3 h-3" /> {log.agent}
-                    </div>
-                  </div>
-                  <div className="text-xs text-zinc-600 font-medium">{log.time}</div>
+            {/* KPIs */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#00f0ff]/50 transition duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-zinc-400 font-medium">Total Agent Runs</span>
+                  <Terminal className="w-5 h-5 text-zinc-500 group-hover:text-[#00f0ff] transition" />
                 </div>
-              ))}
+                <div className="text-4xl font-bold text-white">{telemetry.total_runs.toLocaleString()}</div>
+                <div className="text-sm text-[#00f0ff] mt-2 font-medium">+14% from last week</div>
+              </div>
+              
+              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#ef4444]/50 transition duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-zinc-400 font-medium">Blocked Requests</span>
+                  <ShieldAlert className="w-5 h-5 text-zinc-500 group-hover:text-[#ef4444] transition" />
+                </div>
+                <div className="text-4xl font-bold text-white">{telemetry.blocked_commands.toLocaleString()}</div>
+                <div className="text-sm text-[#ef4444] mt-2 font-medium">12 critical severity</div>
+              </div>
+
+              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#8a2be2]/50 transition duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-zinc-400 font-medium">Active Sandboxes</span>
+                  <Activity className="w-5 h-5 text-zinc-500 group-hover:text-[#8a2be2] transition" />
+                </div>
+                <div className="text-4xl font-bold text-white">42</div>
+                <div className="text-sm text-zinc-500 mt-2 font-medium">Across 3 clusters</div>
+              </div>
+
+              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#00f0ff]/50 transition duration-300 group">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-zinc-400 font-medium">Enforcement Mode</span>
+                  <Lock className="w-5 h-5 text-zinc-500 group-hover:text-[#00f0ff] transition" />
+                </div>
+                <div className="text-4xl font-bold text-white">Strict</div>
+                <div className="text-sm text-[#00f0ff] mt-2 font-medium">eBPF Blocking Enabled</div>
+              </div>
+            </div>
+
+            {/* Charts & Logs */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-xl font-bold text-white">Blocked Outbound Connections</h2>
+                  <span className="px-3 py-1 bg-[#ef4444]/10 text-[#ef4444] text-xs font-bold rounded-full border border-[#ef4444]/20 uppercase tracking-wider">Live</span>
+                </div>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={data}>
+                      <defs>
+                        <linearGradient id="colorBlocked" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                      <XAxis dataKey="time" stroke="#52525b" tick={{fill: '#71717a'}} axisLine={false} tickLine={false} />
+                      <YAxis stroke="#52525b" tick={{fill: '#71717a'}} axisLine={false} tickLine={false} />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#18181b', border: '1px solid #3f3f46', borderRadius: '12px', color: '#fff' }}
+                        itemStyle={{ color: '#ef4444' }}
+                      />
+                      <Area type="monotone" dataKey="blocked" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorBlocked)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl flex flex-col">
+                <h2 className="text-xl font-bold text-white mb-6">Recent Violations</h2>
+                <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                  {[
+                    { target: 'api.stripe.com', agent: 'claude-code', time: '2m ago' },
+                    { target: 'postgres:5432', agent: 'opendevin', time: '14m ago' },
+                    { target: 'github.com/private', agent: 'cursor', time: '1h ago' },
+                    { target: 's3.amazonaws.com', agent: 'aider', time: '3h ago' },
+                  ].map((log, i) => (
+                    <div key={i} className="p-4 rounded-2xl bg-[#18181b] border border-zinc-800/50 flex items-center justify-between group hover:border-[#ef4444]/30 transition">
+                      <div>
+                        <div className="font-mono text-sm text-[#ef4444] font-medium">{log.target}</div>
+                        <div className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
+                          <Terminal className="w-3 h-3" /> {log.agent}
+                        </div>
+                      </div>
+                      <div className="text-xs text-zinc-600 font-medium">{log.time}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'policies' && (
+          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl">
+            <header className="mb-8 flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Access Policies</h1>
+                <p className="text-zinc-400">Manage Zero-Trust rules distributed to all StuntDouble eBPF nodes.</p>
+              </div>
+              <button className="bg-[#00f0ff] hover:bg-[#00f0ff]/80 text-black px-6 py-2 rounded-xl font-bold transition">Deploy Policy</button>
+            </header>
+            
+            <div className="bg-[#0a0a0f] border border-zinc-800/80 rounded-2xl p-6 font-mono text-sm overflow-hidden">
+              <div className="flex gap-2 mb-4 border-b border-zinc-800 pb-4">
+                <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-zinc-600 ml-4">.stuntdouble.yaml</span>
+              </div>
+              <pre className="text-[#c9d1d9]">
+                <span className="text-[#ff7b72]">version</span>: <span className="text-[#79c0ff]">"1.0"</span>{'\n'}
+                <span className="text-[#ff7b72]">policies</span>:{'\n'}
+                {'  '}- <span className="text-[#ff7b72]">name</span>: <span className="text-[#79c0ff]">"Global Default Deny"</span>{'\n'}
+                {'    '}<span className="text-[#ff7b72]">action</span>: <span className="text-[#79c0ff]">"deny"</span>{'\n'}
+                {'    '}<span className="text-[#ff7b72]">rules</span>:{'\n'}
+                {'      '}- <span className="text-[#79c0ff]">"*"</span>{'\n'}
+                {'\n'}
+                {'  '}- <span className="text-[#ff7b72]">name</span>: <span className="text-[#79c0ff]">"Allow NPM Installs"</span>{'\n'}
+                {'    '}<span className="text-[#ff7b72]">action</span>: <span className="text-[#79c0ff]">"allow"</span>{'\n'}
+                {'    '}<span className="text-[#ff7b72]">rules</span>:{'\n'}
+                {'      '}- <span className="text-[#79c0ff]">"registry.npmjs.org"</span>{'\n'}
+                {'\n'}
+                {'  '}- <span className="text-[#ff7b72]">name</span>: <span className="text-[#79c0ff]">"Stripe API Mocking"</span>{'\n'}
+                {'    '}<span className="text-[#ff7b72]">action</span>: <span className="text-[#79c0ff]">"mock"</span>{'\n'}
+                {'    '}<span className="text-[#ff7b72]">rules</span>:{'\n'}
+                {'      '}- <span className="text-[#79c0ff]">"api.stripe.com"</span>{'\n'}
+              </pre>
             </div>
           </div>
-        </div>
+        )}
+
+        {activeTab === 'audit' && (
+          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 rounded-3xl overflow-hidden">
+            <div className="p-8 border-b border-zinc-800/50 flex justify-between items-center bg-[#111116]">
+              <div>
+                <h1 className="text-3xl font-bold text-white tracking-tight">Audit Logs</h1>
+                <p className="text-zinc-400 mt-2">Immutable enterprise ledger of all agent actions.</p>
+              </div>
+              <div className="relative">
+                <input type="text" placeholder="Search logs..." className="bg-[#0a0a0f] border border-zinc-800 text-white px-4 py-2 rounded-xl focus:outline-none focus:border-[#00f0ff]/50 transition w-64" />
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#18181b]/50 border-b border-zinc-800 text-zinc-400 text-xs uppercase tracking-wider">
+                    <th className="p-4 font-semibold">Timestamp</th>
+                    <th className="p-4 font-semibold">Agent ID</th>
+                    <th className="p-4 font-semibold">Action</th>
+                    <th className="p-4 font-semibold">Target</th>
+                    <th className="p-4 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/50">
+                  {[
+                    { id: '1', time: '2026-07-24 10:25:12', agent: 'claude-code', action: 'NETWORK_OUT', target: 'api.stripe.com', status: 'Blocked (Mocked)' },
+                    { id: '2', time: '2026-07-24 10:24:55', agent: 'claude-code', action: 'FILE_WRITE', target: '/src/payment.ts', status: 'Allowed' },
+                    { id: '3', time: '2026-07-24 10:15:30', agent: 'opendevin', action: 'NETWORK_OUT', target: 'postgres:5432', status: 'Blocked (Strict)' },
+                    { id: '4', time: '2026-07-24 10:02:11', agent: 'cursor', action: 'EXEC', target: 'rm -rf /etc', status: 'Blocked (Sandbox)' },
+                    { id: '5', time: '2026-07-24 09:45:00', agent: 'aider', action: 'NETWORK_OUT', target: 'registry.npmjs.org', status: 'Allowed' },
+                  ].map((row) => (
+                    <tr key={row.id} className="hover:bg-[#18181b]/50 transition text-sm">
+                      <td className="p-4 text-zinc-500 font-mono">{row.time}</td>
+                      <td className="p-4 text-zinc-300 font-medium flex items-center gap-2"><Terminal className="w-4 h-4 text-zinc-500"/> {row.agent}</td>
+                      <td className="p-4 text-zinc-400 font-mono text-xs">{row.action}</td>
+                      <td className="p-4 text-[#79c0ff] font-mono text-xs">{row.target}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-1 rounded border text-xs font-bold ${row.status.includes('Blocked') ? 'bg-[#ef4444]/10 text-[#ef4444] border-[#ef4444]/20' : 'bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20'}`}>
+                          {row.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
       </main>
     </div>
   );
