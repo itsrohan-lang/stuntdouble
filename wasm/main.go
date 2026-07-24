@@ -10,7 +10,35 @@ import (
 
 // PolicyEngine encapsulates the logic for evaluating network/file rules
 type PolicyEngine struct {
-	Mode string
+	Mode          string
+	BlockedTarget []string
+}
+
+func (pe *PolicyEngine) SetPolicy(this js.Value, args []js.Value) interface{} {
+	if len(args) < 1 {
+		return false
+	}
+	policyJSON := args[0].String()
+	var policy map[string]interface{}
+	if err := json.Unmarshal([]byte(policyJSON), &policy); err != nil {
+		fmt.Println("[WASM Engine] Error parsing policy:", err)
+		return false
+	}
+
+	if mode, ok := policy["mode"].(string); ok {
+		pe.Mode = mode
+	}
+
+	if blocked, ok := policy["blocked"].([]interface{}); ok {
+		pe.BlockedTarget = []string{}
+		for _, b := range blocked {
+			if str, ok := b.(string); ok {
+				pe.BlockedTarget = append(pe.BlockedTarget, str)
+			}
+		}
+	}
+	fmt.Println("[WASM Engine] Policy updated successfully")
+	return true
 }
 
 func (pe *PolicyEngine) EvaluateRequest(this js.Value, args []js.Value) interface{} {
@@ -30,8 +58,6 @@ func (pe *PolicyEngine) EvaluateRequest(this js.Value, args []js.Value) interfac
 		})
 	}
 
-	// Simple simulation of policy evaluation logic in WASM
-	// In a real port, this would link to github.com/itsrohan-lang/stuntdouble/cli/pkg/api
 	target, ok := req["target"].(string)
 	if !ok {
 		return js.ValueOf(map[string]interface{}{
@@ -40,10 +66,14 @@ func (pe *PolicyEngine) EvaluateRequest(this js.Value, args []js.Value) interfac
 		})
 	}
 
-	// Example static rule for WASM engine
 	allowed := true
-	if target == "api.stripe.com" && pe.Mode != "audit" {
-		allowed = false
+	if pe.Mode != "audit" {
+		for _, blocked := range pe.BlockedTarget {
+			if target == blocked {
+				allowed = false
+				break
+			}
+		}
 	}
 
 	fmt.Printf("[WASM Engine] Evaluated request to %s: allowed=%v\n", target, allowed)
@@ -58,11 +88,12 @@ func (pe *PolicyEngine) EvaluateRequest(this js.Value, args []js.Value) interfac
 func main() {
 	c := make(chan struct{}, 0)
 
-	engine := &PolicyEngine{Mode: "block"}
+	engine := &PolicyEngine{Mode: "block", BlockedTarget: []string{}}
 
 	js.Global().Set("StuntDouble", js.ValueOf(map[string]interface{}{
-		"evaluate": js.FuncOf(engine.EvaluateRequest),
-		"version":  "1.0.0-wasm",
+		"evaluate":  js.FuncOf(engine.EvaluateRequest),
+		"setPolicy": js.FuncOf(engine.SetPolicy),
+		"version":   "1.0.0-wasm",
 	}))
 
 	fmt.Println("StuntDouble WASM Engine initialized and mounted to global scope.")
