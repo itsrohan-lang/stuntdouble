@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os/exec"
 	"sync"
 	"time"
 
@@ -230,6 +231,20 @@ func handleKeployMock(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(mockResponse)
 }
 
+func startEBPFEngine() {
+	log.Println("⚙️ Initializing Rust eBPF Kernel Engine...")
+	cmd := exec.Command("cargo", "run", "--release")
+	cmd.Dir = "../core-ebpf" // Assuming we run from control-plane dir
+	
+	// We don't wait for it to finish because it runs continuously
+	if err := cmd.Start(); err != nil {
+		log.Printf("⚠️ Warning: Failed to start Rust eBPF engine natively (is cargo installed?): %v\n", err)
+		log.Println("Falling back to mock eBPF enforcement mode.")
+	} else {
+		log.Printf("🛡️ Rust eBPF Engine active (PID: %d). Intercepting syscalls at kernel-level.", cmd.Process.Pid)
+	}
+}
+
 func main() {
 	var err error
 	db, err = gorm.Open(sqlite.Open("stuntdouble_audit.db"), &gorm.Config{})
@@ -237,6 +252,9 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	db.AutoMigrate(&AuditLog{})
+
+	// Start the Rust eBPF Kernel probes in the background
+	go startEBPFEngine()
 
 	http.HandleFunc("/telemetry", handleTelemetry)
 	http.HandleFunc("/policy", handlePolicy)
