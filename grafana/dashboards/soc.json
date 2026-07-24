@@ -1,0 +1,37 @@
+{
+  "title": "StuntDouble Global SOC",
+  "timezone": "browser",
+  "refresh": "5s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Blocked Exfiltration Attempts",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        { "expr": "sum(stuntdouble_blocked_requests_total)", "legendFormat": "Blocked" }
+      ],
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" }, "thresholds": {
+          "mode": "absolute",
+          "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ]
+        }}
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Agent Telemetry & CPU Spikes",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 0 },
+      "targets": [
+        { "expr": "rate(stuntdouble_agent_cpu_seconds_total[1m])", "legendFormat": "{{agent_id}}" }
+      ]
+    },
+    {
+      "type": "piechart",
+      "title": "Blocked Threat Vectors (Ports)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "sum by (port) (stuntdouble_blocked_ports_total)", "legendFormat": "{{port}}" }
+      ]
+    }
+  ]
+}
