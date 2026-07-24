@@ -75,6 +75,8 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 		"--cap-drop=ALL",
 		"--memory=2g",
 		"--cpus=1.0",
+		"-e", "ANTHROPIC_API_KEY",
+		"-e", "OPENAI_API_KEY",
 		fmt.Sprintf("--network=container:%s", sidecarName),
 		"-v", fmt.Sprintf("%s:/workspace", mountDir),
 		"-w", "/workspace",
