@@ -24,18 +24,40 @@ app.on('window-all-closed', () => {
   }
 });
 
+const { spawn } = require('child_process');
+
 // IPC handler to start sandbox
 ipcMain.on('start-sandbox', (event, agent) => {
   console.log("Starting sandbox for", agent);
   
   // Try using the local compiled binary if we are running in the repo
   const localSdPath = path.join(__dirname, '..', 'cli', 'sd');
-  const command = `${localSdPath} run ${agent} || sd run ${agent}`;
   
-  exec(command, (error, stdout, stderr) => {
+  // Run the command using spawn to stream output in real-time
+  const child = spawn(localSdPath, ['run', agent]);
+
+  // Fallback if localSdPath fails to spawn
+  child.on('error', (err) => {
+    const fallback = spawn('sd', ['run', agent]);
+    streamChild(fallback, event);
+  });
+
+  streamChild(child, event);
+});
+
+function streamChild(child, event) {
+  child.stdout.on('data', (data) => {
+    event.reply('sandbox-output', data.toString());
+  });
+
+  child.stderr.on('data', (data) => {
+    event.reply('sandbox-output', data.toString());
+  });
+
+  child.on('close', (code) => {
     event.reply('sandbox-status', {
-      success: !error,
-      output: stdout || stderr || (error ? error.message : "Done.")
+      success: code === 0,
+      output: `\n[Process exited with code ${code}]\n`
     });
   });
-});
+}

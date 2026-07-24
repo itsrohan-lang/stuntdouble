@@ -56,6 +56,10 @@
         ipcRenderer.send('start-sandbox', agent);
       });
 
+      ipcRenderer.on('sandbox-output', (event, arg) => {
+        document.getElementById('console').innerText += arg;
+      });
+
       ipcRenderer.on('sandbox-status', (event, arg) => {
         document.getElementById('console').innerText += `\n${arg.output}\n`;
       });
