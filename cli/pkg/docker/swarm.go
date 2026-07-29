@@ -36,12 +36,10 @@ func (sdc *StuntDockerClient) SpawnSwarm(ctx context.Context, agents []string, m
 	// 2. Spawn each agent as a headless microservice inside the Swarm
 	for i, agent := range agents {
 		fmt.Printf(">> [Native Engine] Spawning swarm node %d: %s\n", i+1, agent)
-		
-		agentCmdStr := fmt.Sprintf("npx -y %s", agent)
-		
+
 		resp, err := sdc.cli.ContainerCreate(ctx, &container.Config{
 			Image: "node:20-alpine",
-			Cmd:   []string{"sh", "-c", agentCmdStr},
+			Cmd:   []string{"npx", "-y", agent},
 			Env: []string{
 				"ANTHROPIC_API_KEY=" + os.Getenv("ANTHROPIC_API_KEY"),
 				"OPENAI_API_KEY=" + os.Getenv("OPENAI_API_KEY"),
@@ -50,8 +48,8 @@ func (sdc *StuntDockerClient) SpawnSwarm(ctx context.Context, agents []string, m
 				"stuntdouble.swarm": "true",
 			},
 		}, &container.HostConfig{
-			CapDrop: []string{"ALL"},
-			Binds:   []string{fmt.Sprintf("%s:/workspace", mountDir)},
+			CapDrop:     []string{"ALL"},
+			Binds:       []string{fmt.Sprintf("%s:/workspace", mountDir)},
 			NetworkMode: container.NetworkMode(networkName),
 		}, nil, nil, fmt.Sprintf("stunt-node-%d", i+1))
 
@@ -69,7 +67,7 @@ func (sdc *StuntDockerClient) SpawnSwarm(ctx context.Context, agents []string, m
 	fmt.Println("\n✅ StuntNet Swarm is Live!")
 	fmt.Printf("🔒 Agents can communicate via http://stunt-node-X inside the sandbox.\n")
 	fmt.Println("⚠️ External internet access is completely hard-blocked by Docker network rules.")
-	
+
 	// Wait for context cancellation (Ctrl+C)
 	fmt.Println("\nPress Ctrl+C to safely terminate the swarm and wipe the network...")
 	<-ctx.Done()

@@ -54,8 +54,7 @@ var runCmd = &cobra.Command{
 
 		fmt.Printf("🚀 Starting StuntDouble sandbox for agent: %s\n", agentName)
 
-		agentCmdStr := resolveAgentCommand(agentName, args[1:])
-		agentCmd := []string{"sh", "-c", agentCmdStr}
+		agentCmd := resolveAgentCommand(agentName, args[1:])
 
 		// Capture a snapshot of the workspace before the agent touches it.
 		if err := snapshot.Create(cwd); err != nil {
@@ -82,22 +81,21 @@ var runCmd = &cobra.Command{
 	},
 }
 
-// resolveAgentCommand maps an agent name to the command executed inside the
-// container. Anything unrecognised is treated as an npm package.
-func resolveAgentCommand(agentName string, extraArgs []string) string {
-	var cmdStr string
+// resolveAgentCommand maps an agent name to argv executed inside the container.
+// Anything unrecognised is treated as an npm package. It deliberately returns an
+// argv slice instead of a shell command string so forwarded agent flags are not
+// reinterpreted by /bin/sh.
+func resolveAgentCommand(agentName string, extraArgs []string) []string {
+	var cmdArgs []string
 	switch agentName {
 	case "claude":
-		cmdStr = "npx -y @anthropic-ai/claude-code"
+		cmdArgs = []string{"npx", "-y", "@anthropic-ai/claude-code"}
 	case "sh", "bash":
-		cmdStr = agentName
+		cmdArgs = []string{agentName}
 	default:
-		cmdStr = "npx -y " + agentName
+		cmdArgs = []string{"npx", "-y", agentName}
 	}
-	for _, arg := range extraArgs {
-		cmdStr += " " + arg
-	}
-	return cmdStr
+	return append(cmdArgs, extraArgs...)
 }
 
 // recordRun appends to the local run counter used by `stuntdouble stats` and the
