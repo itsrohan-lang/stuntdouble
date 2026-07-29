@@ -24,9 +24,9 @@ jobs:
           - k8s-operator
           - terraform-provider-stuntdouble
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
           cache-dependency-path: ${{ matrix.module }}/go.sum
@@ -47,9 +47,9 @@ jobs:
     name: Cross-compile CLI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v7
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
           cache-dependency-path: cli/go.sum
@@ -68,5 +68,5 @@ jobs:
     name: Shellcheck install.sh
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - run: shellcheck install.sh
