@@ -1,35 +1,53 @@
 import subprocess
-import json
-import os
+
 
 class Sandbox:
+    """Thin wrapper around the ``sd`` CLI.
+
+    This does nothing to the calling Python process. It shells out to
+    ``sd run``, which starts the agent command in a Docker container with
+    dropped capabilities, memory and CPU limits, and only the working
+    directory mounted.
+
+    Network egress filtering is not implemented, so the sandboxed command can
+    still reach anything the host can reach. ``sd run`` refuses to start
+    unless that is acknowledged, which is why ``allow_unenforced_network``
+    has no default -- see docs/ENFORCEMENT.md.
     """
-    StuntDouble Python SDK Context Manager.
-    Automatically spawns a native OS-level StuntDouble isolation wrapper for AI agents.
-    """
-    def __init__(self, network_policy="strict", drop_caps=True):
-        self.network_policy = network_policy
-        self.drop_caps = drop_caps
+
+    def __init__(self, allow_unenforced_network: bool, env: str = "node:20-alpine"):
+        if not allow_unenforced_network:
+            raise ValueError(
+                "Sandbox requires allow_unenforced_network=True. Network egress "
+                "filtering is not implemented, so a command run through this SDK "
+                "has unrestricted outbound network access. Pass True to "
+                "acknowledge that, or do not use the sandbox."
+            )
+        self.env = env
 
     def __enter__(self):
-        print(f"🛡️ [StuntDouble SDK] Securing Python process (Policy: {self.network_policy})...")
-        # In a deep native integration, this would inject C-types into the running process.
-        # For the MVP SDK, we provide a `.run()` wrapper that delegates to the CLI.
         return self
 
-    def run(self, agent_command: str):
+    def run(self, agent_command: str) -> subprocess.CompletedProcess:
+        """Run ``agent_command`` inside the container.
+
+        Returns the CompletedProcess. Raises CalledProcessError if the agent
+        exits non-zero, so failures are not swallowed.
         """
-        Executes the agent command securely inside the StuntDouble ephemeral container.
-        """
-        print(f"🚀 [StuntDouble SDK] Orchestrating safe execution for: {agent_command}")
-        
-        args = ["sd", "run", "sh", "-c", agent_command]
-        
-        try:
-            result = subprocess.run(args, check=True, text=True, capture_output=False)
-            print("✅ [StuntDouble SDK] Execution concluded safely.")
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️ [StuntDouble SDK] Agent execution was terminated by the sandbox: {e}")
+        return subprocess.run(
+            [
+                "sd",
+                "run",
+                "--allow-unenforced-network",
+                "--env",
+                self.env,
+                "sh",
+                "-c",
+                agent_command,
+            ],
+            check=True,
+            text=True,
+        )
 
     def __exit__(self, exc_type, exc_value, traceback):
-        print(">> [StuntDouble SDK] Tearing down eBPF sandbox constraints.")
+        return False

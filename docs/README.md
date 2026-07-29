@@ -14,40 +14,58 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 🛠️ Detailed Command Reference
+## 🛠️ Command Reference
 
-The StuntDouble CLI (`sd`) provides extreme isolation for AI agents. Below is the comprehensive command manual.
+The StuntDouble CLI (`sd`) runs AI agents in a restricted Docker container.
+
+> Network egress filtering is **not implemented**. The sandbox provides container
+> isolation only. See [ENFORCEMENT.md](./ENFORCEMENT.md) for the full boundary.
 
 ### `sd init`
-Initializes a new StuntDouble sandbox in the current directory.
-- **Action**: Generates a `.stuntdouble.yaml` and `.stuntdouble.telemetry.json` file.
-- **Usage**: Run this at the root of the codebase where the AI agent will operate.
+Writes a `.stuntdouble.yaml` config file in the current directory.
+- **Usage**: Run this at the root of the codebase where the agent will operate.
 
-### `sd run <agent>`
-The primary orchestration command. Wraps the target AI agent inside an eBPF-secured Docker container (or remote cloud MicroVM).
-- **Arguments**: `<agent>` (e.g. `claude`, `cursor`, `opendevin`, `bash`).
+### `sd run <agent> [args...]`
+The primary command. Runs the agent inside a Docker container with
+`--cap-drop=ALL`, a 2g memory cap, a 1.0 CPU cap, and only the working directory
+mounted at `/workspace`. Snapshots the workspace first so `sd rewind` can undo it.
+- **Arguments**: `<agent>` — `claude`, `sh`, `bash`, or any npm package name.
+  Anything after the agent name is forwarded to it verbatim.
 - **Options**:
-  - `--remote, -r`: Offloads the sandbox to the StuntDouble Enterprise Cloud for execution.
-  - `--env, -e`: Dynamically injects a specific base runtime image (default: `node:20-alpine`).
-- **Example**: `sd run claude --env python:3.11-alpine`
+  - `--allow-unenforced-network`: Required. Acknowledges that egress filtering is
+    not active. `sd run` refuses to start without it.
+  - `--env, -e`: Base runtime image (default: `node:20-alpine`).
+- **Example**: `sd run --allow-unenforced-network --env python:3.11-alpine claude`
 
-### `sd daemon`
-Starts the background Control Plane listener. Used heavily in CI/CD pipelines (like our GitHub Action) or Kubernetes Operators to enforce rules dynamically.
-- **Options**:
-  - `--mode`: Enforcement mode (`audit`, `block`, or `chaos`). Default is `block`.
-  - `--policy`: Path to the `.stuntdouble.yaml` configuration.
+### `sd rewind`
+Restores the workspace to the snapshot taken at the last `sd run`.
 
-### `sd chaos`
-Activates Chaos Monkey Testing. This command actively injects simulated network drops, file-permission denials, and artificial latency to test how well the AI agent's error-recovery loop handles restricted environments.
+### `sd record <agent>`
+Records database and API traffic with a Keploy sidecar to generate mocks. Keploy
+runs privileged, with `--pid=host` and `--net=host`.
 
-### `sd protocol attest`
-Performs a cryptographic attestation on the loaded sandbox kernel modules (via Sigstore) to guarantee that they have not been maliciously tampered with prior to agent execution.
+### `sd stats`
+Shows the local run count from `.stuntdouble.telemetry.json`.
 
-## 🌐 Enterprise Integrations
+### `sd serve` / `sd monitor`
+`serve` starts the local telemetry API; `monitor` is a terminal view of the
+control plane.
 
-- **Python SDK**: Import `stuntbot` in your LangChain workflows to spawn secure containers directly via Python.
-- **Kubernetes Operator**: Apply `StuntDoublePolicy` CRDs directly to your cluster to enforce global network policies.
-- **Terraform Provider**: Manage API keys and global RBAC policies on the Control Plane using standard IaC.
+### `sd swarm`
+Spawns multiple agent containers on a shared Docker network.
+
+### `sd ci`
+Generates a GitHub Actions workflow that runs agents in the sandbox.
+
+## 🌐 Other components in this repo
+
+These exist but are unproven — see [PLAN.md](../PLAN.md) for status:
+
+- **Python SDK** (`python-sdk/`): `Sandbox` context manager that shells out to `sd run`.
+- **Kubernetes Operator** (`k8s-operator/`): `StuntDoublePolicy` CRD. Policies are
+  distributed and displayed, not enforced.
+- **Terraform Provider** (`terraform-provider-stuntdouble/`): manages control-plane
+  policy documents.
 
 ---
 *Generated for the StuntDouble ecosystem.*
