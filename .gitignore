@@ -24,9 +24,12 @@ stuntdouble-*
 /cli/stuntdouble-*
 /control-plane/cp
 /control-plane/cp-*
+/control-plane/control-plane
 /core-ebpf/target/
 
 # StuntDouble Local State
 .stuntdouble.telemetry.json
 .stuntdouble/
 k8s-operator/bin/
+logs/
+

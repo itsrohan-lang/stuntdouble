@@ -1,87 +1,95 @@
 "use client"
-import React, { useState, useEffect } from 'react';
-import { Activity, ShieldAlert, Users, ServerCrash, Terminal, Lock, Globe } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Activity, Terminal, Lock } from 'lucide-react';
+
+const CONTROL_PLANE = process.env.NEXT_PUBLIC_STUNTDOUBLE_URL ?? 'http://localhost:4439';
+const TOKEN = process.env.NEXT_PUBLIC_STUNTDOUBLE_TOKEN ?? '';
+
+type AuditRow = {
+  id: number;
+  agent_id: string;
+  target: string;
+  action: string;
+  status: string;
+  created_at: string;
+};
+
+// The control plane requires a bearer token on every endpoint except /api/health.
+const authHeaders = (): Record<string, string> =>
+  TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
 
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
-  const [telemetry, setTelemetry] = useState({ total_runs: 0, blocked_commands: 0 });
+  const [telemetry, setTelemetry] = useState<{ total_runs: number } | null>(null);
+  const [enforcement, setEnforcement] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [isDeploying, setIsDeploying] = useState(false);
   const [policyJson, setPolicyJson] = useState(JSON.stringify({
-    org_id: "ent_global_updated",
-    blocked_ports: [5432, 27017, 3306, 6379, 8080],
+    org_id: "default",
+    blocked_ports: [5432, 27017, 3306, 6379],
     allowed_agents: ["claude", "cursor", "opendevin"],
     strict_egress: true
   }, null, 2));
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [isSimulating, setIsSimulating] = useState(false);
-  
+  const [auditLogs, setAuditLogs] = useState<AuditRow[]>([]);
+
   const deployPolicy = async () => {
     setIsDeploying(true);
     try {
-      await fetch('http://localhost:4439/policy', {
+      const res = await fetch(`${CONTROL_PLANE}/policy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: policyJson
       });
-      setTimeout(() => setIsDeploying(false), 1000);
+      if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
+      setError(null);
     } catch (e) {
-      console.error(e);
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
       setIsDeploying(false);
     }
   };
 
   const fetchAuditLogs = async () => {
     try {
-      const res = await fetch('http://localhost:4439/api/audit');
+      const res = await fetch(`${CONTROL_PLANE}/api/audit`, { headers: authHeaders() });
+      if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
       const data = await res.json();
-      if (data) setAuditLogs(data);
+      setAuditLogs(Array.isArray(data) ? data : []);
     } catch (e) {
-      console.error("Failed to fetch audit logs", e);
-    }
-  };
-
-  const simulateRogueAttack = async () => {
-    setIsSimulating(true);
-    try {
-      await fetch('http://localhost:4439/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agent_id: "rogue-agent-007",
-          target: "api.stripe.com/v1/payouts",
-          action: "NETWORK_EXFILTRATION",
-          status: "Blocked (eBPF Kernel)",
-          created_at: new Date().toISOString()
-        })
-      });
-      await fetchAuditLogs();
-      setTimeout(() => setIsSimulating(false), 500);
-    } catch (e) {
-      console.error(e);
-      setIsSimulating(false);
+      setError(e instanceof Error ? e.message : String(e));
     }
   };
 
   useEffect(() => {
-    // Poll the Control Plane API for live stats every 2 seconds
+    // Poll the control plane. Every figure rendered below comes from these
+    // responses: when the control plane is unreachable the cards show "—"
+    // rather than a placeholder number.
     const fetchStats = async () => {
       try {
-        const res = await fetch('http://localhost:4439/api/stats');
-        const data = await res.json();
-        // If data isn't initialized on backend, keep existing state
-        if (data.total_runs > 0 || data.blocked_commands > 0) {
-          setTelemetry({ total_runs: data.total_runs, blocked_commands: data.blocked_commands });
-        }
+        const res = await fetch(`${CONTROL_PLANE}/api/stats`, { headers: authHeaders() });
+        if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
+        setTelemetry(await res.json());
+        setError(null);
       } catch (e) {
-        console.error("Failed to fetch live stats", e);
+        setTelemetry(null);
+        setError(e instanceof Error ? e.message : String(e));
       }
     };
-    
-    // Initial fetch
+
+    const fetchHealth = async () => {
+      try {
+        const res = await fetch(`${CONTROL_PLANE}/api/health`);
+        const data = await res.json();
+        setEnforcement(data.egress_enforcement ?? null);
+      } catch {
+        setEnforcement(null);
+      }
+    };
+
     fetchStats();
+    fetchHealth();
     fetchAuditLogs();
-    
+
     const interval = setInterval(() => {
       fetchStats();
       if (activeTab === 'audit') fetchAuditLogs();
@@ -89,20 +97,25 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [activeTab]);
 
-  // Simulated live data feed
-  const [data, setData] = useState([
-    { time: '10:00', blocked: 12 },
-    { time: '10:05', blocked: 19 },
-    { time: '10:10', blocked: 15 },
-    { time: '10:15', blocked: 25 },
-    { time: '10:20', blocked: 22 },
-    { time: '10:25', blocked: 30 },
-  ]);
+  // Group the real audit log by target so the breakdown reflects recorded
+  // events instead of illustrative percentages.
+  const targetBreakdown = useMemo(() => {
+    if (auditLogs.length === 0) return [];
+    const counts = new Map<string, number>();
+    for (const row of auditLogs) {
+      counts.set(row.target, (counts.get(row.target) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([target, count]) => ({
+        target,
+        count,
+        pct: Math.round((count / auditLogs.length) * 100),
+      }));
+  }, [auditLogs]);
 
-  useEffect(() => {
-    // In a real app, this would fetch from http://localhost:8080/metrics
-    setTelemetry({ total_runs: 1402, blocked_commands: 843 });
-  }, []);
+  const recentEvents = auditLogs.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[#05050a] text-zinc-300 font-sans selection:bg-[#00f0ff] selection:text-black">
@@ -118,104 +131,118 @@ export default function Dashboard() {
           <button onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Overview</button>
           <button onClick={() => setActiveTab('policies')} className={activeTab === 'policies' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Policies</button>
           <button onClick={() => setActiveTab('audit')} className={activeTab === 'audit' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Audit Logs</button>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#8a2be2] to-[#00f0ff] flex items-center justify-center text-white font-bold ml-4 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-            CTO
-          </div>
         </div>
       </nav>
 
       <main className="relative z-10 p-8 max-w-7xl mx-auto space-y-8">
-        
+
+        {!TOKEN && (
+          <div className="border border-[#eab308]/40 bg-[#eab308]/10 text-[#eab308] px-6 py-4 rounded-2xl text-sm">
+            <b>No API token configured.</b> The control plane requires a bearer token.
+            Set <code className="font-mono">NEXT_PUBLIC_STUNTDOUBLE_TOKEN</code> to the same
+            value as <code className="font-mono">STUNTDOUBLE_TOKEN</code> on the server.
+          </div>
+        )}
+
+        {error && (
+          <div className="border border-[#ef4444]/40 bg-[#ef4444]/10 text-[#ef4444] px-6 py-4 rounded-2xl text-sm">
+            <b>Control plane unreachable.</b> {error}
+          </div>
+        )}
+
+        {enforcement === 'unimplemented' && (
+          <div className="border border-zinc-700 bg-zinc-800/40 text-zinc-300 px-6 py-4 rounded-2xl text-sm">
+            <b>Egress filtering is not active.</b> Kernel-level network enforcement is
+            unimplemented, so policies below are advisory. Sandboxed agents are isolated
+            by container limits only and can still reach the network.
+          </div>
+        )}
+
         {activeTab === 'overview' && (
           <>
             <header className="mb-10">
-              <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Global Security Posture</h1>
-              <p className="text-zinc-400 text-lg">Real-time telemetry across all organizational AI sandboxes.</p>
+              <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Security Posture</h1>
+              <p className="text-zinc-400 text-lg">Telemetry reported by StuntDouble CLI instances.</p>
             </header>
 
-            {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* KPIs — every value is read from the control plane, or shown as "—". */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#00f0ff]/50 transition duration-300 group">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-zinc-400 font-medium">Total Agent Runs</span>
                   <Terminal className="w-5 h-5 text-zinc-500 group-hover:text-[#00f0ff] transition" />
                 </div>
-                <div className="text-4xl font-bold text-white">{telemetry.total_runs.toLocaleString()}</div>
-                <div className="text-sm text-[#00f0ff] mt-2 font-medium">+14% from last week</div>
-              </div>
-              
-              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#ef4444]/50 transition duration-300 group">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-zinc-400 font-medium">Blocked Requests</span>
-                  <ShieldAlert className="w-5 h-5 text-zinc-500 group-hover:text-[#ef4444] transition" />
+                <div className="text-4xl font-bold text-white">
+                  {telemetry ? telemetry.total_runs.toLocaleString() : '—'}
                 </div>
-                <div className="text-4xl font-bold text-white">{telemetry.blocked_commands.toLocaleString()}</div>
-                <div className="text-sm text-[#ef4444] mt-2 font-medium">12 critical severity</div>
+                <div className="text-sm text-zinc-500 mt-2 font-medium">Reported by CLI instances</div>
               </div>
 
-              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#8a2be2]/50 transition duration-300 group">
+              <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#ef4444]/50 transition duration-300 group">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-zinc-400 font-medium">Active Sandboxes</span>
-                  <Activity className="w-5 h-5 text-zinc-500 group-hover:text-[#8a2be2] transition" />
+                  <span className="text-zinc-400 font-medium">Audited Events</span>
+                  <Activity className="w-5 h-5 text-zinc-500 group-hover:text-[#ef4444] transition" />
                 </div>
-                <div className="text-4xl font-bold text-white">42</div>
-                <div className="text-sm text-zinc-500 mt-2 font-medium">Across 3 clusters</div>
+                <div className="text-4xl font-bold text-white">{auditLogs.length.toLocaleString()}</div>
+                <div className="text-sm text-zinc-500 mt-2 font-medium">Most recent 50 records</div>
               </div>
 
               <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-6 rounded-3xl hover:border-[#00f0ff]/50 transition duration-300 group">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-zinc-400 font-medium">Enforcement Mode</span>
+                  <span className="text-zinc-400 font-medium">Egress Enforcement</span>
                   <Lock className="w-5 h-5 text-zinc-500 group-hover:text-[#00f0ff] transition" />
                 </div>
-                <div className="text-4xl font-bold text-white">Strict</div>
-                <div className="text-sm text-[#00f0ff] mt-2 font-medium">eBPF Blocking Enabled</div>
+                <div className="text-4xl font-bold text-white">
+                  {enforcement === null ? '—' : enforcement === 'unimplemented' ? 'Off' : 'On'}
+                </div>
+                <div className="text-sm text-zinc-500 mt-2 font-medium">
+                  {enforcement === 'unimplemented' ? 'Not implemented' : 'Reported by control plane'}
+                </div>
               </div>
             </div>
 
-            {/* Charts & Logs */}
+            {/* Breakdown & recent events, both derived from the audit log */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-xl font-bold text-white">Threat Vector Analysis</h2>
-                  <span className="px-3 py-1 bg-[#ef4444]/10 text-[#ef4444] text-xs font-bold rounded-full border border-[#ef4444]/20 uppercase tracking-wider">Live Blocks</span>
+                  <h2 className="text-xl font-bold text-white">Audited Targets</h2>
+                  <span className="px-3 py-1 bg-zinc-800 text-zinc-400 text-xs font-bold rounded-full border border-zinc-700 uppercase tracking-wider">
+                    From audit log
+                  </span>
                 </div>
-                <div className="h-[300px] w-full flex flex-col justify-center space-y-6">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Database Ports (5432, 27017)</span><span className="text-[#ef4444] font-mono">42%</span></div>
-                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#ef4444] h-2 rounded-full" style={{width: '42%'}}></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Cloud Metadata APIs (169.254.x.x)</span><span className="text-[#f97316] font-mono">28%</span></div>
-                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#f97316] h-2 rounded-full" style={{width: '28%'}}></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Stripe/Payment APIs</span><span className="text-[#eab308] font-mono">18%</span></div>
-                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#eab308] h-2 rounded-full" style={{width: '18%'}}></div></div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-sm mb-2"><span className="text-zinc-300">Internal K8s DNS</span><span className="text-[#3b82f6] font-mono">12%</span></div>
-                    <div className="w-full bg-[#18181b] rounded-full h-2"><div className="bg-[#3b82f6] h-2 rounded-full" style={{width: '12%'}}></div></div>
-                  </div>
+                <div className="min-h-[240px] w-full flex flex-col justify-center space-y-6">
+                  {targetBreakdown.length === 0 ? (
+                    <p className="text-zinc-500 text-center">No audited events recorded yet.</p>
+                  ) : targetBreakdown.map((row) => (
+                    <div key={row.target}>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-zinc-300 font-mono truncate pr-4">{row.target}</span>
+                        <span className="text-zinc-400 font-mono whitespace-nowrap">{row.count} ({row.pct}%)</span>
+                      </div>
+                      <div className="w-full bg-[#18181b] rounded-full h-2">
+                        <div className="bg-[#00f0ff] h-2 rounded-full" style={{ width: `${row.pct}%` }}></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl flex flex-col">
-                <h2 className="text-xl font-bold text-white mb-6">Recent Violations</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Recent Events</h2>
                 <div className="flex-1 overflow-y-auto space-y-4 pr-2">
-                  {[
-                    { target: 'api.stripe.com', agent: 'claude-code', time: '2m ago' },
-                    { target: 'postgres:5432', agent: 'opendevin', time: '14m ago' },
-                    { target: 'github.com/private', agent: 'cursor', time: '1h ago' },
-                    { target: 's3.amazonaws.com', agent: 'aider', time: '3h ago' },
-                  ].map((log, i) => (
-                    <div key={i} className="p-4 rounded-2xl bg-[#18181b] border border-zinc-800/50 flex items-center justify-between group hover:border-[#ef4444]/30 transition">
-                      <div>
-                        <div className="font-mono text-sm text-[#ef4444] font-medium">{log.target}</div>
+                  {recentEvents.length === 0 ? (
+                    <p className="text-zinc-500">Nothing recorded yet.</p>
+                  ) : recentEvents.map((log) => (
+                    <div key={log.id} className="p-4 rounded-2xl bg-[#18181b] border border-zinc-800/50 flex items-center justify-between group hover:border-[#00f0ff]/30 transition">
+                      <div className="min-w-0">
+                        <div className="font-mono text-sm text-[#79c0ff] font-medium truncate">{log.target}</div>
                         <div className="text-xs text-zinc-500 mt-1 flex items-center gap-1">
-                          <Terminal className="w-3 h-3" /> {log.agent}
+                          <Terminal className="w-3 h-3" /> {log.agent_id}
                         </div>
                       </div>
-                      <div className="text-xs text-zinc-600 font-medium">{log.time}</div>
+                      <div className="text-xs text-zinc-600 font-medium whitespace-nowrap pl-2">
+                        {new Date(log.created_at).toLocaleTimeString()}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -229,21 +256,24 @@ export default function Dashboard() {
             <header className="mb-8 flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Access Policies</h1>
-                <p className="text-zinc-400">Manage Zero-Trust rules distributed to all StuntDouble eBPF nodes.</p>
+                <p className="text-zinc-400">
+                  Policy document distributed to CLI instances. Advisory until egress
+                  filtering is implemented.
+                </p>
               </div>
               <button onClick={deployPolicy} disabled={isDeploying} className="bg-[#00f0ff] hover:bg-[#00f0ff]/80 disabled:opacity-50 text-black px-6 py-2 rounded-xl font-bold transition">
                 {isDeploying ? 'Deploying...' : 'Deploy Policy'}
               </button>
             </header>
-            
+
             <div className="bg-[#0a0a0f] border border-zinc-800/80 rounded-2xl p-6 font-mono text-sm overflow-hidden">
               <div className="flex gap-2 mb-4 border-b border-zinc-800 pb-4">
                 <div className="w-3 h-3 rounded-full bg-red-500"></div>
                 <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
                 <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                <span className="text-zinc-600 ml-4">.stuntdouble.yaml</span>
+                <span className="text-zinc-600 ml-4">policy.json</span>
               </div>
-              <textarea 
+              <textarea
                 className="w-full h-64 bg-transparent text-[#79c0ff] font-mono text-sm resize-none focus:outline-none"
                 value={policyJson}
                 onChange={(e) => setPolicyJson(e.target.value)}
@@ -254,23 +284,15 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'audit' && (
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(239,68,68,0.05)]">
+          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 rounded-3xl overflow-hidden">
             <div className="p-8 border-b border-zinc-800/50 flex justify-between items-center bg-[#111116]">
               <div>
                 <h1 className="text-3xl font-bold text-white tracking-tight">Audit Logs</h1>
-                <p className="text-zinc-400 mt-2">Immutable enterprise ledger of all agent actions.</p>
+                <p className="text-zinc-400 mt-2">
+                  Events reported by CLI instances. Self-reported, not independently verified.
+                </p>
               </div>
-              <div className="flex gap-4">
-                <button 
-                  onClick={simulateRogueAttack}
-                  disabled={isSimulating}
-                  className="bg-[#ef4444]/10 hover:bg-[#ef4444]/20 border border-[#ef4444]/50 text-[#ef4444] px-4 py-2 rounded-xl font-bold transition flex items-center gap-2"
-                >
-                  <ShieldAlert className="w-4 h-4" />
-                  {isSimulating ? 'Simulating...' : 'Simulate Rogue Attack'}
-                </button>
-                <input type="text" placeholder="Search logs..." className="bg-[#0a0a0f] border border-zinc-800 text-white px-4 py-2 rounded-xl focus:outline-none focus:border-[#00f0ff]/50 transition w-64" />
-              </div>
+              <input type="text" placeholder="Search logs..." className="bg-[#0a0a0f] border border-zinc-800 text-white px-4 py-2 rounded-xl focus:outline-none focus:border-[#00f0ff]/50 transition w-64" />
             </div>
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
@@ -286,16 +308,16 @@ export default function Dashboard() {
                 <tbody className="divide-y divide-zinc-800/50">
                   {auditLogs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-zinc-500 font-medium">No audit logs recorded yet. Try simulating an attack!</td>
+                      <td colSpan={5} className="p-8 text-center text-zinc-500 font-medium">No audit logs recorded yet.</td>
                     </tr>
-                  ) : auditLogs.map((row: any) => (
-                    <tr key={row.id} className={`hover:bg-[#18181b]/50 transition text-sm ${row.action === 'NETWORK_EXFILTRATION' ? 'bg-[#ef4444]/5' : ''}`}>
+                  ) : auditLogs.map((row) => (
+                    <tr key={row.id} className="hover:bg-[#18181b]/50 transition text-sm">
                       <td className="p-4 text-zinc-500 font-mono">{new Date(row.created_at).toLocaleString()}</td>
                       <td className="p-4 text-zinc-300 font-medium flex items-center gap-2"><Terminal className="w-4 h-4 text-zinc-500"/> {row.agent_id}</td>
                       <td className="p-4 text-zinc-400 font-mono text-xs">{row.action}</td>
                       <td className="p-4 text-[#79c0ff] font-mono text-xs">{row.target}</td>
                       <td className="p-4">
-                        <span className={`px-2 py-1 rounded border text-xs font-bold ${row.status.includes('Blocked') ? 'bg-[#ef4444]/10 text-[#ef4444] border-[#ef4444]/20' : 'bg-[#10b981]/10 text-[#10b981] border-[#10b981]/20'}`}>
+                        <span className="px-2 py-1 rounded border text-xs font-bold bg-zinc-800 text-zinc-300 border-zinc-700">
                           {row.status}
                         </span>
                       </td>

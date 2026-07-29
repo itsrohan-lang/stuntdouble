@@ -10,20 +10,25 @@ import (
 
 var rewindCmd = &cobra.Command{
 	Use:   "rewind",
-	Short: "Instantly rewinds the workspace state to undo destructive agent actions",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("⏪ Initiating StuntDouble State Rewind...")
-		
-		fmt.Println(">> Reverting filesystem from isolated Git tree snapshot...")
-		
-		workspace, _ := os.Getwd()
-		if err := snapshot.Restore(workspace); err != nil {
-			fmt.Println("❌ Error rewinding workspace:", err)
-			return
+	Short: "Restores the workspace to the snapshot taken at the last run",
+	Long: `Restores tracked files to the snapshot captured when 'stuntdouble run' last
+started, and removes files created since.
+
+This discards uncommitted work in the workspace, including your own changes made
+after the snapshot was taken.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		workspace, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("getting current directory: %w", err)
 		}
 
-		fmt.Println("\n✅ Workspace successfully restored to previous safe state.")
-		fmt.Println("🛡️  Disaster averted. The AI agents' mistakes have been erased.")
+		fmt.Println("Restoring workspace from the last StuntDouble snapshot...")
+		if err := snapshot.Restore(workspace); err != nil {
+			return fmt.Errorf("rewinding workspace: %w", err)
+		}
+
+		fmt.Println("✅ Workspace restored to the last snapshot.")
+		return nil
 	},
 }
 

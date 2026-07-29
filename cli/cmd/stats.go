@@ -9,46 +9,47 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// TelemetryData mirrors .stuntdouble.telemetry.json, written by `stuntdouble run`.
 type TelemetryData struct {
-	TotalRuns       int       `json:"total_runs"`
-	BlockedCommands int       `json:"blocked_commands"`
-	LastRun         time.Time `json:"last_run"`
+	TotalRuns int       `json:"total_runs"`
+	LastRun   time.Time `json:"last_run"`
 }
 
 var statsCmd = &cobra.Command{
 	Use:   "stats",
-	Short: "Displays a telemetry dashboard of agent actions and blocked destructive commands",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("📊 StuntDouble Telemetry Dashboard")
-		fmt.Println("=====================================")
+	Short: "Shows local agent run counts",
+	Long: `Shows the run counter recorded by 'stuntdouble run' in the current directory.
 
-		telemetryFile := ".stuntdouble.telemetry.json"
+This reports how many sandboxed sessions ran. It does not report blocked network
+connections: kernel-level egress filtering is not implemented, so no connections
+are blocked or counted.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		const telemetryFile = ".stuntdouble.telemetry.json"
+
 		data, err := os.ReadFile(telemetryFile)
-
+		if os.IsNotExist(err) {
+			fmt.Println("No runs recorded in this directory yet.")
+			return nil
+		}
 		if err != nil {
-			// If file doesn't exist, just show zeros
-			fmt.Println("Total Agent Sessions:  0")
-			fmt.Println("Destructive Commands Blocked: 0")
-			fmt.Println("Status: All clear. No rogue actions detected.")
-			return
+			return fmt.Errorf("reading %s: %w", telemetryFile, err)
 		}
 
 		var stats TelemetryData
 		if err := json.Unmarshal(data, &stats); err != nil {
-			fmt.Println("Error parsing telemetry data")
-			return
+			return fmt.Errorf("parsing %s: %w", telemetryFile, err)
 		}
 
-		fmt.Printf("Total Agent Sessions:  %d\n", stats.TotalRuns)
-		fmt.Printf("Destructive Commands Blocked: %d\n", stats.BlockedCommands)
-		fmt.Printf("Last Session Time: %s\n", stats.LastRun.Format(time.RFC822))
-		fmt.Println("=====================================")
-
-		if stats.BlockedCommands > 0 {
-			fmt.Println("⚠️  Your agents attempted destructive host actions that were safely intercepted.")
-		} else {
-			fmt.Println("✅  Your agents have behaved safely.")
+		fmt.Println("StuntDouble local run history")
+		fmt.Println("=============================")
+		fmt.Printf("Total agent sessions: %d\n", stats.TotalRuns)
+		if !stats.LastRun.IsZero() {
+			fmt.Printf("Last session:         %s\n", stats.LastRun.Format(time.RFC822))
 		}
+		fmt.Println()
+		fmt.Println("Note: network egress filtering is not implemented; sessions are")
+		fmt.Println("isolated by container limits only.")
+		return nil
 	},
 }
 

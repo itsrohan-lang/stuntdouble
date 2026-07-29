@@ -9,8 +9,13 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "sd",
-	Short: "StuntDouble - 1-click safe mode for AI agents",
-	Long: `StuntDouble intercepts and isolates autonomous agents like Claude Code inside secure Docker containers with mocked eBPF network layers.`,
+	Short: "StuntDouble - run AI coding agents in an isolated container",
+	Long: `StuntDouble runs autonomous coding agents inside a restricted Docker container
+with dropped capabilities, memory and CPU limits, and a scoped workspace mount,
+and can snapshot the workspace so agent changes can be reverted.
+
+Network egress filtering is NOT implemented. Sandboxed agents can still reach
+the network. See docs/ENFORCEMENT.md for what is and is not enforced.`,
 }
 
 func Execute() {

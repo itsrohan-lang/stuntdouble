@@ -25,18 +25,27 @@ jobs:
         working-directory: ./cli
         run: |
           GOOS=linux GOARCH=amd64 go build -o stuntdouble-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -o stuntdouble-linux-arm64
           GOOS=darwin GOARCH=amd64 go build -o stuntdouble-darwin-amd64
           GOOS=darwin GOARCH=arm64 go build -o stuntdouble-darwin-arm64
           GOOS=windows GOARCH=amd64 go build -o stuntdouble-windows-amd64.exe
 
+      # install.sh refuses to install without a matching checksum, so the
+      # release must publish SHA256SUMS alongside the binaries.
+      - name: Generate checksums
+        working-directory: ./cli
+        run: sha256sum stuntdouble-* > SHA256SUMS
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: cli/stuntdouble-*
+          files: |
+            cli/stuntdouble-*
+            cli/SHA256SUMS
           overwrite_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:

@@ -1,47 +1,52 @@
+// Package ollama provides a logging reverse proxy in front of a local Ollama
+// server.
+//
+// The proxy exists for visibility: it records which endpoints an agent calls.
+// It does not sandbox the model, block requests, or restrict what the model can
+// do, and no header it sets changes model behaviour.
 package ollama
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
-// StartProxy creates a reverse proxy to localhost:11434 (Ollama)
-// It injects the StuntDouble Universal Stunt Protocol token into every request
-// so that local models know they are running in a secure sandbox.
+// StartProxy runs a reverse proxy on listenPort that forwards to a local Ollama
+// server and logs each request.
 func StartProxy(listenPort string) error {
-	targetUrl, err := url.Parse("http://localhost:11434")
+	target, err := url.Parse("http://localhost:11434")
 	if err != nil {
 		return err
 	}
 
-	proxy := httputil.NewSingleHostReverseProxy(targetUrl)
+	proxy := httputil.NewSingleHostReverseProxy(target)
 
-	// Intercept and rewrite the request
+	// NewSingleHostReverseProxy already rewrites scheme, host and path. Wrap its
+	// Director rather than replacing it: overwriting req.URL.Path with the
+	// target's (empty) path sent every request to "/".
+	base := proxy.Director
 	proxy.Director = func(req *http.Request) {
-		req.Header.Add("X-Forwarded-Host", req.Host)
-		req.Header.Add("X-Origin-Host", targetUrl.Host)
-		
-		// Inject the STP (Universal Stunt Protocol) Attestation
-		// This tells the local AI that its environment is kernel-hardened
-		req.Header.Add("X-StuntDouble-Sandbox", "STP-v2.0-SECURE")
-		
-		req.URL.Scheme = targetUrl.Scheme
-		req.URL.Host = targetUrl.Host
-		req.URL.Path = targetUrl.Path
-		
-		fmt.Printf("🛡️  [Ollama Proxy] Intercepted prompt to /%s. Injected STP Attestation.\n", req.URL.Path)
+		base(req)
+		log.Printf("→ %s %s", req.Method, req.URL.Path)
 	}
 
-	// Intercept the response for telemetry
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		fmt.Printf("📦 [Ollama Proxy] Local AI responded with HTTP %d.\n", resp.StatusCode)
+		log.Printf("← %d %s", resp.StatusCode, resp.Request.URL.Path)
 		return nil
 	}
 
-	fmt.Printf(">> [StuntDouble] Local Ollama Proxy running on port %s\n", listenPort)
-	fmt.Printf(">> [StuntDouble] Point your AI apps to http://localhost:%s to enforce sandbox governance.\n", listenPort)
-	
-	return http.ListenAndServe(":"+listenPort, proxy)
+	addr := "127.0.0.1:" + listenPort
+	srv := &http.Server{
+		Addr:              addr,
+		Handler:           proxy,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	fmt.Printf("Ollama logging proxy on http://%s → %s\n", addr, target)
+	fmt.Println("Requests are logged, not filtered.")
+	return srv.ListenAndServe()
 }

@@ -8,8 +8,9 @@ import (
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Start the StuntDouble Local Control Plane API",
-	Long:  "Spins up a local REST API on port 8080 to power the StuntDouble Visual Web Dashboard.",
+	Short: "Start the local StuntDouble telemetry API",
+	Long: `Serves the local run counter over HTTP on loopback so the dashboard can read
+it. This API reports telemetry; it does not enforce policy.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		port, _ := cmd.Flags().GetString("port")
 		

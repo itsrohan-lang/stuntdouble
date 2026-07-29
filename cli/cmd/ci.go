@@ -8,19 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ciCmd = &cobra.Command{
-	Use:   "ci",
-	Short: "Generates native GitHub Actions workflows for testing AI-generated PRs",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("⚙️  Generating StuntDouble CI/CD Integration...")
-
-		workflowDir := filepath.Join(".github", "workflows")
-		if err := os.MkdirAll(workflowDir, 0755); err != nil {
-			fmt.Println("❌ Error creating workflow directory:", err)
-			return
-		}
-
-		workflowContent := `name: StuntDouble Safe PR Check
+// workflowTemplate only references commands that exist. Earlier versions
+// generated a `sd sync-logs` step for a command the CLI never had, so the
+// generated workflow always failed.
+const workflowTemplate = `name: StuntDouble Agent Check
 
 on:
   pull_request:
@@ -34,26 +25,34 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install StuntDouble
-        run: npm install -g stuntdouble
+        run: npm install -g stuntdouble-sandbox-cli
 
-      - name: Verify Sandbox Integrity
-        run: sd run echo "Agent code safely audited in ephemeral pipeline"
-        
-      - name: Sync Audit Logs to CTO Dashboard
-        env:
-          STUNTDOUBLE_API_KEY: ${{ secrets.STUNTDOUBLE_API_KEY }}
-        run: sd sync-logs
+      # Network egress filtering is not implemented, so the sandbox provides
+      # container isolation only. --allow-unenforced-network acknowledges that.
+      - name: Run agent in sandbox
+        run: sd run sh --allow-unenforced-network -c "echo audited"
 `
 
-		workflowPath := filepath.Join(workflowDir, "stuntdouble-ci.yml")
-		err := os.WriteFile(workflowPath, []byte(workflowContent), 0644)
-		if err != nil {
-			fmt.Println("❌ Error writing workflow file:", err)
-			return
+var ciCmd = &cobra.Command{
+	Use:   "ci",
+	Short: "Generates a GitHub Actions workflow that runs agents in the sandbox",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		workflowDir := filepath.Join(".github", "workflows")
+		if err := os.MkdirAll(workflowDir, 0755); err != nil {
+			return fmt.Errorf("creating %s: %w", workflowDir, err)
 		}
 
-		fmt.Println("✅ Successfully generated .github/workflows/stuntdouble-ci.yml")
-		fmt.Println("🔒 AI Agent PRs will now be automatically tested inside the StuntDouble Cloud.")
+		path := filepath.Join(workflowDir, "stuntdouble-ci.yml")
+		if _, err := os.Stat(path); err == nil {
+			return fmt.Errorf("%s already exists; remove it first to regenerate", path)
+		}
+
+		if err := os.WriteFile(path, []byte(workflowTemplate), 0644); err != nil {
+			return fmt.Errorf("writing %s: %w", path, err)
+		}
+
+		fmt.Printf("✅ Wrote %s\n", path)
+		return nil
 	},
 }
 

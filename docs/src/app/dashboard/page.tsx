@@ -1,12 +1,10 @@
 "use client"
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 
 interface TelemetryStats {
   total_runs: number;
-  blocked_commands: number;
   last_run: string;
-  status: string;
+  egress_enforcement: string;
 }
 
 export default function Dashboard() {
@@ -78,7 +76,7 @@ export default function Dashboard() {
         <div className="w-full mb-12 flex justify-between items-end">
           <div>
             <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Mission Control</h1>
-            <p className="text-zinc-400">Live telemetry from the eBPF kernel layer & Docker sandbox.</p>
+            <p className="text-zinc-400">Run telemetry reported by the local StuntDouble CLI.</p>
           </div>
           <button 
             onClick={() => setIsPolling(!isPolling)}
@@ -98,27 +96,32 @@ export default function Dashboard() {
             <div className="text-5xl font-black text-white my-4">
               {stats?.total_runs !== undefined ? stats.total_runs : '-'}
             </div>
-            <p className="text-xs text-zinc-500 mt-auto">Isolated runs inside Docker MicroVMs.</p>
+            <p className="text-xs text-zinc-500 mt-auto">Isolated runs inside Docker containers.</p>
           </div>
 
-          {/* Blocked Commands Card */}
-          <div className="glass-card p-6 flex flex-col relative overflow-hidden group border-red-900/30">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent opacity-50"></div>
-            <div className="absolute -right-10 -bottom-10 w-40 h-40 bg-red-500/10 rounded-full blur-2xl group-hover:bg-red-500/20 transition-all"></div>
-            <h3 className="text-sm font-semibold text-zinc-400 tracking-wider uppercase mb-1">eBPF Packet Drops</h3>
-            <div className="text-5xl font-black text-white my-4 text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.3)]">
-              {stats?.blocked_commands !== undefined ? stats.blocked_commands : '-'}
+          {/* Egress Enforcement Card */}
+          <div className="glass-card p-6 flex flex-col relative overflow-hidden group border-zinc-800">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-zinc-500 to-transparent opacity-50"></div>
+            <h3 className="text-sm font-semibold text-zinc-400 tracking-wider uppercase mb-1">Egress Enforcement</h3>
+            <div className="text-5xl font-black text-white my-4">
+              {stats?.egress_enforcement === undefined
+                ? '-'
+                : stats.egress_enforcement === 'unimplemented' ? 'Off' : 'On'}
             </div>
-            <p className="text-xs text-zinc-500 mt-auto text-red-200/50">Malicious queries intercepted at kernel level.</p>
+            <p className="text-xs text-zinc-500 mt-auto">
+              {stats?.egress_enforcement === 'unimplemented'
+                ? 'Kernel-level network filtering is not implemented. Container isolation only.'
+                : 'Reported by the local API.'}
+            </p>
           </div>
 
-          {/* System Status Card */}
+          {/* Last Activity Card */}
           <div className="glass-card p-6 flex flex-col relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#00f0ff] to-transparent opacity-50"></div>
-            <h3 className="text-sm font-semibold text-zinc-400 tracking-wider uppercase mb-1">Kernel Status</h3>
+            <h3 className="text-sm font-semibold text-zinc-400 tracking-wider uppercase mb-1">API Status</h3>
             <div className="flex items-center gap-3 my-4">
               <div className="text-2xl font-bold text-white">
-                {error ? "Disconnected" : stats?.status || "Analyzing..."}
+                {error ? "Disconnected" : stats ? "Connected" : "Connecting..."}
               </div>
             </div>
             {stats?.last_run && (
@@ -135,17 +138,18 @@ export default function Dashboard() {
             <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
             <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
             <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
-            <span className="text-xs font-mono text-zinc-500 ml-2">/var/log/stuntdouble/warden.log</span>
+            <span className="text-xs font-mono text-zinc-500 ml-2">connection log</span>
           </div>
+          {/* Client connection status only. This is not a kernel log: there is no
+              kernel component to stream events from. */}
           <div className="p-6 font-mono text-sm h-64 overflow-y-auto flex flex-col gap-2">
             {isClient && (
               <>
-                <div className="text-zinc-500">[{new Date().toISOString()}] Warden initialized. Awaiting API connection...</div>
-                {error && <div className="text-red-400">[{new Date().toISOString()}] ERROR: Connection to localhost:8080 refused. Start 'stuntdouble serve'.</div>}
+                {error && <div className="text-red-400">ERROR: Connection to localhost:8080 refused. Start &apos;stuntdouble serve&apos;.</div>}
                 {!error && stats && (
                   <>
-                    <div className="text-green-400">[{new Date().toISOString()}] Connected to Control Plane API on port 8080.</div>
-                    <div className="text-[#00f0ff]">[{new Date().toISOString()}] Listening for eBPF ring buffer events...</div>
+                    <div className="text-green-400">Connected to the local telemetry API on port 8080.</div>
+                    <div className="text-zinc-500">Polling /api/stats every 2s.</div>
                   </>
                 )}
               </>

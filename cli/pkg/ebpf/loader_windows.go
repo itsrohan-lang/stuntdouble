@@ -1,30 +1,20 @@
 //go:build windows
+
 package ebpf
 
-import (
-	"fmt"
-	"os/exec"
-)
+// Network enforcement on Windows would require a Windows Filtering Platform
+// callout driver and an accompanying service. The service referenced by
+// earlier versions of this file (StuntDoubleWFP) is not built, signed, or
+// shipped by this repository, so there is nothing to start.
 
-type Interceptor struct {}
+// Interceptor would hold a handle to the WFP service.
+type Interceptor struct{}
 
+// AttachInterceptor is not implemented on Windows. It returns ErrUnsupported so
+// callers refuse to run workloads that would otherwise be unrestricted.
 func AttachInterceptor(cgroupPath string) (*Interceptor, error) {
-	fmt.Println(">> [WFP Engine] Detected Windows host. Loading Native NT Kernel Driver...")
-	
-	cmd := exec.Command("sc", "start", "StuntDoubleWFP")
-	if err := cmd.Run(); err != nil {
-		fmt.Println("⚠️ Failed to start WFP driver natively (are you running as Administrator?). Proceeding with mock interception.")
-	} else {
-		fmt.Println("✅ [WFP Engine] Active! Database ports (Postgres, Mongo, Redis) are now blackholed natively by Windows.")
-	}
-	
-	return &Interceptor{}, nil
+	return nil, ErrUnsupported
 }
 
-func (i *Interceptor) Detach() {
-	if i == nil {
-		return
-	}
-	fmt.Println(">> [WFP Engine] Detaching Windows Kernel hooks...")
-	exec.Command("sc", "stop", "StuntDoubleWFP").Run()
-}
+// Detach is a no-op while AttachInterceptor always fails.
+func (i *Interceptor) Detach() {}

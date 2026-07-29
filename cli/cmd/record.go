@@ -10,19 +10,22 @@ import (
 
 var recordCmd = &cobra.Command{
 	Use:   "record [command]",
-	Short: "Records database and API traffic to generate StuntDouble mocks",
-	Args:  cobra.MinimumNArgs(1),
+	Short: "Records database and API traffic with Keploy to generate mocks",
+	Long: `Runs the given command under Keploy's recording engine in a container so its
+outbound calls are captured as replayable mocks.
+
+The Keploy container runs privileged with --pid=host and --net=host because its
+traffic capture requires it. That is a broad grant on your host: only record
+commands you trust.`,
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		appCommand := args[0]
-		fmt.Printf("🎙️  Starting StuntDouble Record Mode for: %s\n", appCommand)
-		fmt.Println(">> Injecting eBPF proxy (Keploy) to capture network traffic...")
+		fmt.Printf("Recording traffic for: %s\n", appCommand)
 
-		// For the MVP, we simulate wrapping the command in a Keploy record container
-		// In a full implementation, this would invoke Keploy's recording engine.
-		
 		cwd, _ := os.Getwd()
-		
-		// Run Keploy container in record mode natively via Docker
+
+		// Run Keploy in record mode. Keploy itself does the capture; StuntDouble
+		// only assembles the container invocation.
 		recordArgs := []string{
 			"run", "--rm", "-it",
 			"--name", "stunt-keploy-record",
@@ -38,7 +41,6 @@ var recordCmd = &cobra.Command{
 		}
 
 		if len(args) > 1 {
-			// Append any extra args the user passed
 			recordArgs = append(recordArgs, args[1:]...)
 		}
 
@@ -47,11 +49,10 @@ var recordCmd = &cobra.Command{
 		execCmd.Stdout = os.Stdout
 		execCmd.Stderr = os.Stderr
 
-		fmt.Println(">> Listening for outbound database connections (Postgres, Mongo, etc.)...")
 		if err := execCmd.Run(); err != nil {
 			fmt.Println("\n⚠️ Recording session ended or was terminated:", err)
 		} else {
-			fmt.Println("\n✅ Mocks recorded successfully! Saved to ./keploy/tests")
+			fmt.Println("\n✅ Mocks recorded to ./keploy/tests")
 		}
 	},
 }

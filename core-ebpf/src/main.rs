@@ -1,29 +1,22 @@
-use aya::{include_bytes_aligned, Bpf};
-use aya::programs::KProbe;
-use log::{info, warn};
-use std::convert::TryInto;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use tokio::signal;
+//! StuntDouble eBPF engine.
+//!
+//! This binary is a placeholder. It does not load or attach any eBPF program:
+//! the bytecode it would load (`ebpf-bytecode/stuntdouble.bpf.o`) is not built
+//! by this repository, and no build step produces it.
+//!
+//! It exits with an error rather than idling, so that anything supervising it
+//! (see `control-plane/main.go`) observes a failure instead of assuming
+//! enforcement is active.
 
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
+use log::error;
+
+fn main() -> Result<(), anyhow::Error> {
     env_logger::init();
-    info!("🛡️ StuntDouble Rust eBPF Engine: Initializing bare-metal kernel injection...");
 
-    // In a full implementation, this would load the compiled eBPF bytecode
-    // let mut bpf = Bpf::load(include_bytes_aligned!("../../ebpf-bytecode/stuntdouble.bpf.o"))?;
-    // let program: &mut KProbe = bpf.program_mut("sys_connect").unwrap().try_into()?;
-    // program.load()?;
-    // program.attach("sys_connect", 0)?;
-    
-    info!("✅ Native XDP/TC hooks applied.");
-    info!("🔒 Panic Mode: Network outbound connections strictly monitored by Linux Kernel.");
+    error!(
+        "kernel-level network enforcement is not implemented: no compiled eBPF \
+         bytecode is available to load. See docs/ENFORCEMENT.md."
+    );
 
-    // Wait for Ctrl+C
-    info!("Waiting for Ctrl-C...");
-    signal::ctrl_c().await?;
-    info!("Exiting...");
-
-    Ok(())
+    anyhow::bail!("ebpf engine unimplemented")
 }

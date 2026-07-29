@@ -8,53 +8,72 @@ import (
 )
 
 func TestHandleHealth(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/health", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handleHealth)
+	http.HandlerFunc(handleHealth).ServeHTTP(rr, req)
 
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusOK)
 	}
 
 	var response map[string]string
 	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
-		t.Errorf("handler returned invalid JSON: %v", err)
+		t.Fatalf("invalid JSON response: %v", err)
 	}
-
-	if response["status"] != "StuntDouble Engine Online" {
-		t.Errorf("handler returned unexpected body: got %v", response["status"])
+	if response["status"] != "ok" {
+		t.Errorf("status = %q, want \"ok\"", response["status"])
 	}
 }
 
-func TestHandleStats(t *testing.T) {
-	req, err := http.NewRequest("GET", "/api/stats", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+// The API must not imply that egress filtering is active, whether or not a
+// telemetry file exists in the working directory.
+func TestHandleStatsReportsEnforcementHonestly(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/stats", nil)
 
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(handleStats)
+	http.HandlerFunc(handleStats).ServeHTTP(rr, req)
 
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	if rr.Code != http.StatusOK {
+		t.Errorf("status = %d, want %d", rr.Code, http.StatusOK)
 	}
 
 	var stats TelemetryStats
 	if err := json.Unmarshal(rr.Body.Bytes(), &stats); err != nil {
-		t.Errorf("handler returned invalid JSON: %v", err)
+		t.Fatalf("invalid JSON response: %v", err)
+	}
+	if stats.EgressEnforcement != "unimplemented" {
+		t.Errorf("egress_enforcement = %q, want \"unimplemented\"", stats.EgressEnforcement)
+	}
+}
+
+// A wildcard origin would let any page in the user's browser read local
+// telemetry, so only the configured origin may be reflected.
+func TestCORSOnlyAllowsConfiguredOrigin(t *testing.T) {
+	handler := corsMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	tests := []struct {
+		origin string
+		want   string
+	}{
+		{defaultCORSOrigin, defaultCORSOrigin},
+		{"http://evil.example", ""},
+		{"", ""},
 	}
 
-	// Because we might not have a .stuntdouble.telemetry.json in the test directory,
-	// it should default to Status: "Secure"
-	if stats.Status != "Secure" {
-		t.Errorf("handler returned unexpected status: got %v want Secure", stats.Status)
+	for _, tc := range tests {
+		req := httptest.NewRequest(http.MethodGet, "/api/stats", nil)
+		if tc.origin != "" {
+			req.Header.Set("Origin", tc.origin)
+		}
+
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if got := rr.Header().Get("Access-Control-Allow-Origin"); got != tc.want {
+			t.Errorf("origin %q: Allow-Origin = %q, want %q", tc.origin, got, tc.want)
+		}
 	}
 }

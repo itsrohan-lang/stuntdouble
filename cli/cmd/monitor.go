@@ -4,16 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
 type CLIStats struct {
-	TotalRuns       int `json:"total_runs"`
-	BlockedCommands int `json:"blocked_commands"`
+	TotalRuns int `json:"total_runs"`
 }
 
+// CLIPolicy is the policy document served by the control plane. The fields
+// describe intent: nothing enforces them while egress filtering is
+// unimplemented.
 type CLIPolicy struct {
 	OrgID         string   `json:"org_id"`
 	BlockedPorts  []int    `json:"blocked_ports"`
@@ -23,52 +26,83 @@ type CLIPolicy struct {
 
 var monitorCmd = &cobra.Command{
 	Use:   "monitor",
-	Short: "Live terminal view of the StuntDouble Control Plane",
-	Long:  "Polls the central enterprise Control Plane and displays a terminal-based dashboard of live security telemetry and active Zero-Trust policies.",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Print("\033[2J") // Clear screen
-		
-		for {
-			fmt.Print("\033[H") // Move cursor to top-left
-			fmt.Println("🛡️  STUNTDOUBLE TERMINAL SOC (Live Monitoring)")
-			fmt.Println("==================================================")
-			fmt.Printf("Last Updated: %s\n\n", time.Now().Format(time.RFC1123))
+	Short: "Live terminal view of the StuntDouble control plane",
+	Long: `Polls the control plane and displays reported run telemetry and the active
+policy document.
 
-			// Fetch Live Stats
-			statsResp, err := http.Get("http://localhost:4439/api/stats")
+Requires STUNTDOUBLE_TOKEN to be set to the control plane's bearer token.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		token := os.Getenv("STUNTDOUBLE_TOKEN")
+		if token == "" {
+			return fmt.Errorf("STUNTDOUBLE_TOKEN is not set; " +
+				"export the same token the control plane was started with")
+		}
+
+		baseURL := os.Getenv("STUNTDOUBLE_URL")
+		if baseURL == "" {
+			baseURL = "http://localhost:4439"
+		}
+
+		client := &http.Client{Timeout: 5 * time.Second}
+		get := func(path string, out any) error {
+			req, err := http.NewRequestWithContext(cmd.Context(), http.MethodGet, baseURL+path, nil)
 			if err != nil {
-				fmt.Println("❌  Control Plane Status: OFFLINE (Is it running on port 4439?)")
-				fmt.Println("Waiting for connection...")
+				return err
+			}
+			req.Header.Set("Authorization", "Bearer "+token)
+
+			resp, err := client.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("%s returned %s", path, resp.Status)
+			}
+			return json.NewDecoder(resp.Body).Decode(out)
+		}
+
+		fmt.Print("\033[2J")
+
+		for {
+			fmt.Print("\033[H\033[J")
+			fmt.Println("STUNTDOUBLE MONITOR")
+			fmt.Println("==================================================")
+			fmt.Printf("Control plane: %s\n", baseURL)
+			fmt.Printf("Updated:       %s\n\n", time.Now().Format(time.RFC1123))
+
+			var stats CLIStats
+			if err := get("/api/stats", &stats); err != nil {
+				fmt.Printf("Control plane unreachable: %v\n", err)
+				fmt.Println("\nRetrying in 2s. Press Ctrl+C to exit.")
 				time.Sleep(2 * time.Second)
 				continue
 			}
-			defer statsResp.Body.Close()
 
-			var stats CLIStats
-			json.NewDecoder(statsResp.Body).Decode(&stats)
+			fmt.Println("REPORTED TELEMETRY")
+			fmt.Printf("   Total agent runs:  %d\n\n", stats.TotalRuns)
 
-			// Fetch Live Policy
-			policyResp, err := http.Get("http://localhost:4439/policy")
 			var policy CLIPolicy
-			if err == nil {
-				json.NewDecoder(policyResp.Body).Decode(&policy)
-				policyResp.Body.Close()
+			if err := get("/policy", &policy); err != nil {
+				fmt.Printf("Could not read policy: %v\n\n", err)
+			} else {
+				fmt.Println("ACTIVE POLICY DOCUMENT (advisory — not enforced)")
+				fmt.Printf("   Organization ID:    %s\n", policy.OrgID)
+				fmt.Printf("   Strict egress:      %t\n", policy.StrictEgress)
+				fmt.Printf("   Allowed agents:     %v\n", policy.AllowedAgents)
+				fmt.Printf("   Blocked ports:      %v\n\n", policy.BlockedPorts)
 			}
 
-			fmt.Println("📊 GLOBAL TELEMETRY")
-			fmt.Printf("   Total Agent Runs:    %d\n", stats.TotalRuns)
-			fmt.Printf("   Blocked Outbound:    \033[31m%d\033[0m (Critical Overrides)\n\n", stats.BlockedCommands)
-
-			fmt.Println("📜 ACTIVE ZERO-TRUST POLICY")
-			fmt.Printf("   Organization ID:     %s\n", policy.OrgID)
-			fmt.Printf("   Enforcement Mode:    %t (Strict Egress)\n", policy.StrictEgress)
-			fmt.Printf("   Whitelisted Agents:  %v\n", policy.AllowedAgents)
-			fmt.Printf("   Blocked Ports:       %v\n\n", policy.BlockedPorts)
-
 			fmt.Println("==================================================")
-			fmt.Println("Press Ctrl+C to exit monitor mode.")
-			
-			time.Sleep(2 * time.Second)
+			fmt.Println("Egress filtering is not implemented; the policy above")
+			fmt.Println("is distributed but not applied. Press Ctrl+C to exit.")
+
+			select {
+			case <-cmd.Context().Done():
+				return nil
+			case <-time.After(2 * time.Second):
+			}
 		}
 	},
 }
