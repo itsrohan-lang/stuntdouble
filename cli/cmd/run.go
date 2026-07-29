@@ -128,5 +128,12 @@ func init() {
 		"Proceed even though kernel-level network egress filtering is unavailable")
 	runCmd.Flags().StringP("env", "e", "node:20-alpine",
 		"Docker runtime image for the agent (e.g. python:3.11-alpine, rust:alpine)")
+
+	// Stop parsing flags at the first positional argument so that everything
+	// after the agent name is forwarded to it verbatim. Without this, cobra
+	// claims the agent's own flags and `sd run sh -c "echo hi"` fails with
+	// "unknown shorthand flag: 'c'".
+	runCmd.Flags().SetInterspersed(false)
+
 	rootCmd.AddCommand(runCmd)
 }

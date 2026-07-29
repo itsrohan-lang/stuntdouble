@@ -10,13 +10,15 @@ Fixes # (issue)
 - [ ] This change requires a documentation update
 
 ## Testing Performed
-- [ ] Deployed locally using `docker-compose up`
-- [ ] Verified eBPF packet drops
-- [ ] Verified Keploy mock ghosts
-- [ ] Ran Chaos Monkey tests (`sd chaos`)
+- [ ] `cd cli && go build ./... && go vet ./... && go test ./...`
+- [ ] `cd control-plane && go build ./... && go vet ./... && go test ./...`
+- [ ] Deployed the control plane and dashboard locally using `docker-compose up`
+- [ ] Exercised the affected `sd` subcommand by hand
 
 ## Checklist
 - [ ] My code follows the style guidelines of this project
 - [ ] I have performed a self-review of my own code
-- [ ] I have commented my code, particularly in hard-to-understand kernel hooks
+- [ ] I have commented my code, particularly anything non-obvious
 - [ ] I have made corresponding changes to the documentation
+- [ ] Any capability this PR claims is actually reachable in the built binary,
+      and `PLAN.md` still describes the code accurately

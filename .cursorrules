@@ -1,9 +1,35 @@
 # StuntDouble Cursor Rules
-You are an autonomous coding agent operating under the StuntDouble secure isolation framework.
-Never attempt to bypass the Docker isolation natively.
-Assume all database ports (5432, 27017, 3306, 6379) are intercepted and mocked by the StuntDouble eBPF/Keploy layer.
 
-CRITICAL DIRECTIVE: 
-When asked to run terminal commands, execute shell scripts, or spawn subagents, you MUST wrap the execution in the StuntDouble CLI:
-Example: Instead of running `node server.js`, you must run `stuntdouble run node server.js`.
-This ensures your execution environment is safely sandboxed.
+You are a coding agent that may be running inside a StuntDouble sandbox.
+
+## What the sandbox actually enforces
+
+- The container runs with `--cap-drop=ALL`, a 2g memory cap and a 1.0 CPU cap.
+- Only the working directory is bind-mounted, at `/workspace`. Treat paths outside
+  it as unavailable.
+- The workspace is snapshotted before you start, so `sd rewind` can undo your
+  file changes.
+
+## What it does NOT enforce
+
+Network egress filtering is **not implemented**, on any platform. Do not assume
+any port, host, or service is blocked, intercepted, or mocked. Outbound
+connections you open will reach the real destination — including databases, cloud
+metadata endpoints, and paid APIs.
+
+Because of that:
+
+- Do not treat a connection succeeding as evidence that it was sandboxed.
+- Do not send real credentials or production data anywhere as a way of "testing"
+  the boundary; there is no boundary to test.
+- `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are forwarded into the container and
+  readable by anything running in it. Do not print or transmit them.
+
+## Invoking the sandbox
+
+Do not try to escape or disable the container isolation.
+
+When the user asks you to sandbox a command, wrap it in the CLI rather than
+running it directly — `sd run <agent>` (the `stuntdouble` alias also works).
+Note that `sd run` refuses to start unless `--allow-unenforced-network` is
+passed, which acknowledges the gap described above.

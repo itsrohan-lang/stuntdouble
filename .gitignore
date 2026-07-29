@@ -12,6 +12,16 @@ node_modules/
 npm/node_modules/
 npm/.npm/
 
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Go / provider build artifacts
+terraform-provider-stuntdouble/terraform-provider-stuntdouble
+
 # Config files (for testing)
 .stuntdouble.yaml
 
