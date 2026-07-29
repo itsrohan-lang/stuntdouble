@@ -26,7 +26,7 @@ export default function FeaturesPage() {
           <div className="glass-card p-8 flex flex-col gap-4 hover:border-[#8a2be2] transition-all duration-300 group">
             <div className="text-4xl group-hover:scale-110 transition-transform origin-left">⏪</div>
             <h3 className="text-xl font-bold text-white">Zero-Copy Time Travel</h3>
-            <p className="text-sm text-zinc-400 leading-relaxed">StuntDouble takes a cryptographic snapshot of your working directory using Git's low-level core object database. If an AI ruins your code, `stuntdouble rewind` instantly restores it.</p>
+            <p className="text-sm text-zinc-400 leading-relaxed">StuntDouble takes a cryptographic snapshot of your working directory using Git&apos;s low-level core object database. If an AI ruins your code, `stuntdouble rewind` instantly restores it.</p>
           </div>
           
           <div className="glass-card p-8 flex flex-col gap-4 hover:border-[var(--accent)] transition-all duration-300 group">

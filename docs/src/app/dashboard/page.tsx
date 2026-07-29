@@ -1,5 +1,6 @@
 "use client"
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 interface TelemetryStats {
   total_runs: number;
@@ -11,10 +12,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState<TelemetryStats | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(true);
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
     const fetchStats = async () => {
       try {
         const res = await fetch('http://localhost:8080/api/stats');
@@ -22,7 +21,7 @@ export default function Dashboard() {
         const data = await res.json();
         setStats(data);
         setError(null);
-      } catch (err) {
+      } catch {
         setError("Control Plane Offline. Run 'stuntdouble serve' locally.");
       }
     };
@@ -45,7 +44,7 @@ export default function Dashboard() {
       {/* Navbar */}
       <nav className="w-full flex justify-between items-center py-6 px-8 border-b border-zinc-800/50 bg-[#0d0d12]">
         <div className="flex items-center gap-4">
-          <img src="/logo.jpg" alt="StuntDouble Logo" className="w-8 h-8 rounded-md" />
+          <Image src="/logo.jpg" width={32} height={32} alt="StuntDouble Logo" className="w-8 h-8 rounded-md" priority />
           <div className="text-2xl font-black tracking-tighter text-white">Stunt<span className="text-[#00f0ff]">Double</span></div>
           <div className="ml-4 px-3 py-1 rounded-full bg-zinc-800/50 border border-zinc-700 text-xs font-semibold text-zinc-400">
             Control Plane
@@ -143,15 +142,11 @@ export default function Dashboard() {
           {/* Client connection status only. This is not a kernel log: there is no
               kernel component to stream events from. */}
           <div className="p-6 font-mono text-sm h-64 overflow-y-auto flex flex-col gap-2">
-            {isClient && (
+            {error && <div className="text-red-400">ERROR: Connection to localhost:8080 refused. Start &apos;stuntdouble serve&apos;.</div>}
+            {!error && stats && (
               <>
-                {error && <div className="text-red-400">ERROR: Connection to localhost:8080 refused. Start &apos;stuntdouble serve&apos;.</div>}
-                {!error && stats && (
-                  <>
-                    <div className="text-green-400">Connected to the local telemetry API on port 8080.</div>
-                    <div className="text-zinc-500">Polling /api/stats every 2s.</div>
-                  </>
-                )}
+                <div className="text-green-400">Connected to the local telemetry API on port 8080.</div>
+                <div className="text-zinc-500">Polling /api/stats every 2s.</div>
               </>
             )}
           </div>

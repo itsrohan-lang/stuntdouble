@@ -1,5 +1,6 @@
 "use client"
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import { Activity, Terminal, Lock } from 'lucide-react';
 
 const CONTROL_PLANE = process.env.NEXT_PUBLIC_STUNTDOUBLE_URL ?? 'http://localhost:4439';
@@ -49,17 +50,6 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAuditLogs = async () => {
-    try {
-      const res = await fetch(`${CONTROL_PLANE}/api/audit`, { headers: authHeaders() });
-      if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
-      const data = await res.json();
-      setAuditLogs(Array.isArray(data) ? data : []);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-    }
-  };
-
   useEffect(() => {
     // Poll the control plane. Every figure rendered below comes from these
     // responses: when the control plane is unreachable the cards show "—"
@@ -83,6 +73,17 @@ export default function Dashboard() {
         setEnforcement(data.egress_enforcement ?? null);
       } catch {
         setEnforcement(null);
+      }
+    };
+
+    const fetchAuditLogs = async () => {
+      try {
+        const res = await fetch(`${CONTROL_PLANE}/api/audit`, { headers: authHeaders() });
+        if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
+        const data = await res.json();
+        setAuditLogs(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
       }
     };
 
@@ -124,7 +125,7 @@ export default function Dashboard() {
 
       <nav className="relative z-10 border-b border-zinc-800/50 bg-[#0a0a0f]/80 backdrop-blur-xl px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/logo.png" className="w-10 h-10 rounded-lg shadow-[0_0_15px_rgba(138,43,226,0.5)]" alt="StuntDouble Logo" />
+          <Image src="/logo.png" width={40} height={40} className="w-10 h-10 rounded-lg shadow-[0_0_15px_rgba(138,43,226,0.5)]" alt="StuntDouble Logo" priority />
           <span className="text-xl font-black text-white tracking-tight">StuntDouble <span className="text-zinc-500 font-medium">Control Plane</span></span>
         </div>
         <div className="flex items-center gap-6 text-sm font-medium">
