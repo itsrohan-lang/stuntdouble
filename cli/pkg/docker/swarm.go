@@ -3,11 +3,11 @@ package docker
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/network"
+	"github.com/stuntdouble/cli/pkg/proxy"
 )
 
 // SpawnSwarm orchestrates multiple agents inside an isolated Docker bridge network
@@ -41,8 +41,8 @@ func (sdc *StuntDockerClient) SpawnSwarm(ctx context.Context, agents []string, m
 			Image: "node:20-alpine",
 			Cmd:   []string{"npx", "-y", agent},
 			Env: []string{
-				"ANTHROPIC_API_KEY=" + os.Getenv("ANTHROPIC_API_KEY"),
-				"OPENAI_API_KEY=" + os.Getenv("OPENAI_API_KEY"),
+				"ANTHROPIC_API_KEY=" + proxy.DummyAnthropicKey,
+				"OPENAI_API_KEY=" + proxy.DummyOpenAIKey,
 			},
 			Labels: map[string]string{
 				"stuntdouble.swarm": "true",

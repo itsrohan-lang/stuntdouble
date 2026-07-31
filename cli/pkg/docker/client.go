@@ -14,6 +14,7 @@ import (
 
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
+	"github.com/stuntdouble/cli/pkg/proxy"
 )
 
 // StuntDockerClient wraps the native Docker SDK
@@ -48,6 +49,15 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 	}
 	io.Copy(os.Stdout, reader)
 
+	// Start Zero-Trust API Key substitution proxy
+	fmt.Println(">> [Stunt Layer] Initializing Zero-Trust API Key proxy...")
+	secProxy := proxy.NewZeroTrustProxy()
+	if _, err := secProxy.Start(ctx); err != nil {
+		fmt.Printf("⚠️ Failed to start zero-trust proxy: %v\n", err)
+	} else {
+		defer secProxy.Stop()
+	}
+
 	fmt.Println(">> [Stunt Layer] Injecting Keploy proxy sidecar...")
 
 	// 1. Start the Keploy proxy sidecar in the background. Use a unique name so
@@ -78,14 +88,14 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 
 	fmt.Printf(">> [Native Engine] Spawning %s agent with --cap-drop=ALL attached to sidecar network...\n", envImage)
 
-	// 2. Start the Agent container, attaching its network namespace to the sidecar
+	// 2. Start the Agent container, attaching dummy credentials for zero-trust protection
 	args := []string{
 		"run", "-it", "--rm",
 		"--cap-drop=ALL",
 		"--memory=2g",
 		"--cpus=1.0",
-		"-e", "ANTHROPIC_API_KEY",
-		"-e", "OPENAI_API_KEY",
+		"-e", fmt.Sprintf("ANTHROPIC_API_KEY=%s", proxy.DummyAnthropicKey),
+		"-e", fmt.Sprintf("OPENAI_API_KEY=%s", proxy.DummyOpenAIKey),
 		fmt.Sprintf("--network=container:%s", sidecarName),
 		"-v", fmt.Sprintf("%s:/workspace", mountDir),
 		"-w", "/workspace",

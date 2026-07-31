@@ -134,6 +134,7 @@ export default function Dashboard() {
         <div className="flex items-center gap-6 text-sm font-medium">
           <button onClick={() => setActiveTab('overview')} className={activeTab === 'overview' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Overview</button>
           <button onClick={() => setActiveTab('policies')} className={activeTab === 'policies' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Policies</button>
+          <button onClick={() => setActiveTab('diff')} className={activeTab === 'diff' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Diff Inspector</button>
           <button onClick={() => setActiveTab('audit')} className={activeTab === 'audit' ? "text-white" : "text-zinc-500 hover:text-zinc-300 transition"}>Audit Logs</button>
         </div>
       </nav>
@@ -256,8 +257,8 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'policies' && (
-          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl">
-            <header className="mb-8 flex justify-between items-center">
+          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl space-y-8">
+            <header className="flex justify-between items-center">
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Access Policies</h1>
                 <p className="text-zinc-400">
@@ -269,6 +270,35 @@ export default function Dashboard() {
                 {isDeploying ? 'Deploying...' : 'Deploy Policy'}
               </button>
             </header>
+
+            {/* Interactive Policy Preset Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[#0a0a0f] p-6 rounded-2xl border border-zinc-800">
+              <div>
+                <label className="text-xs uppercase tracking-wider text-zinc-500 font-bold block mb-2">Org ID</label>
+                <input
+                  type="text"
+                  value="default"
+                  disabled
+                  className="w-full bg-[#18181b] border border-zinc-800 text-white px-3 py-2 rounded-xl text-sm font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-zinc-500 font-bold block mb-2">Strict Egress Mode</label>
+                <div className="flex items-center gap-3 pt-2">
+                  <span className="text-sm text-zinc-300 font-mono">Enforced</span>
+                  <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-lg">ACTIVE</span>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs uppercase tracking-wider text-zinc-500 font-bold block mb-2">Protected DB Ports</label>
+                <div className="flex gap-2 text-xs font-mono text-[#00f0ff] pt-2">
+                  <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">5432</span>
+                  <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">27017</span>
+                  <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">3306</span>
+                  <span className="px-2 py-1 bg-zinc-800 rounded border border-zinc-700">6379</span>
+                </div>
+              </div>
+            </div>
 
             <div className="bg-[#0a0a0f] border border-zinc-800/80 rounded-2xl p-6 font-mono text-sm overflow-hidden">
               <div className="flex gap-2 mb-4 border-b border-zinc-800 pb-4">
@@ -283,6 +313,45 @@ export default function Dashboard() {
                 onChange={(e) => setPolicyJson(e.target.value)}
                 spellCheck="false"
               />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'diff' && (
+          <div className="bg-[#111116]/80 backdrop-blur-md border border-zinc-800/50 p-8 rounded-3xl space-y-6">
+            <header className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">Workspace Diff &amp; Rewind</h1>
+                <p className="text-zinc-400">
+                  Inspect modifications made by sandboxed AI agents against the pre-run zero-copy snapshot.
+                </p>
+              </div>
+              <span className="px-4 py-2 bg-[#00f0ff]/10 text-[#00f0ff] border border-[#00f0ff]/30 text-xs font-bold rounded-xl font-mono">
+                SNAPSHOT ACTIVE
+              </span>
+            </header>
+
+            <div className="bg-[#0a0a0f] border border-zinc-800 rounded-2xl p-6 font-mono text-sm">
+              <div className="flex justify-between items-center mb-4 border-b border-zinc-800 pb-3">
+                <span className="text-zinc-400 font-bold">Modified Files vs Snapshot</span>
+                <span className="text-xs text-zinc-500">Run <code className="text-[#00f0ff]">sd rewind</code> to discard agent changes</span>
+              </div>
+              <div className="space-y-3">
+                <div className="p-3 bg-[#18181b] rounded-xl border border-zinc-800 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <span className="text-amber-400 text-xs font-bold font-mono uppercase">MODIFIED</span>
+                    <span className="text-zinc-200 text-xs">cli/cmd/run.go</span>
+                  </div>
+                  <span className="text-xs text-zinc-500">Added --max-duration guardrail</span>
+                </div>
+                <div className="p-3 bg-[#18181b] rounded-xl border border-zinc-800 flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <span className="text-emerald-400 text-xs font-bold font-mono uppercase">ADDED</span>
+                    <span className="text-zinc-200 text-xs">cli/pkg/proxy/proxy.go</span>
+                  </div>
+                  <span className="text-xs text-zinc-500">Zero-Trust Proxy</span>
+                </div>
+              </div>
             </div>
           </div>
         )}

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -68,7 +69,21 @@ var runCmd = &cobra.Command{
 
 		startTime := time.Now()
 		envImage, _ := cmd.Flags().GetString("env")
-		runErr := sdClient.SpawnIsolatedAgent(cmd.Context(), agentCmd, cwd, envImage)
+		maxDurationStr, _ := cmd.Flags().GetString("max-duration")
+
+		runCtx := cmd.Context()
+		if maxDurationStr != "" {
+			d, err := time.ParseDuration(maxDurationStr)
+			if err != nil {
+				return fmt.Errorf("invalid --max-duration: %w", err)
+			}
+			var cancel context.CancelFunc
+			runCtx, cancel = context.WithTimeout(cmd.Context(), d)
+			defer cancel()
+			fmt.Printf("⏳ [Guardrail] Enforcing maximum execution limit: %v\n", d)
+		}
+
+		runErr := sdClient.SpawnIsolatedAgent(runCtx, agentCmd, cwd, envImage)
 		if runErr != nil {
 			fmt.Println("\n⚠️ Agent session ended or was terminated:", runErr)
 		} else {
@@ -126,6 +141,8 @@ func init() {
 		"Proceed even though kernel-level network egress filtering is unavailable")
 	runCmd.Flags().StringP("env", "e", "node:20-alpine",
 		"Docker runtime image for the agent (e.g. python:3.11-alpine, rust:alpine)")
+	runCmd.Flags().String("max-duration", "",
+		"Maximum session duration limit for runaway agent prevention (e.g. 15m, 30s, 1h)")
 
 	// Stop parsing flags at the first positional argument so that everything
 	// after the agent name is forwarded to it verbatim. Without this, cobra
