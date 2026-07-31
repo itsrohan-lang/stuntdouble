@@ -14,7 +14,7 @@ spec:
       labels:
         app: stuntdouble
     spec:
-      hostPID: true
+      hostPID: false
       hostNetwork: true
       containers:
       - name: stuntdouble
@@ -22,15 +22,19 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         securityContext:
           privileged: {{ .Values.securityContext.privileged }}
+          allowPrivilegeEscalation: false
           capabilities:
+            drop:
+              - ALL
             add:
 {{ toYaml .Values.securityContext.capabilities.add | indent 14 }}
         volumeMounts:
         - name: sys-fs-cgroup
           mountPath: /sys/fs/cgroup
-          readOnly: false
+          readOnly: true
         - name: docker-sock
           mountPath: /var/run/docker.sock
+          readOnly: true
         resources:
 {{ toYaml .Values.resources | indent 10 }}
       volumes:

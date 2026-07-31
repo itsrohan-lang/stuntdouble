@@ -41,5 +41,7 @@ stuntdouble-*
 .stuntdouble.telemetry.json
 .stuntdouble/
 k8s-operator/bin/
-logs/
+# Native interceptors
+mac/esf_interceptor
+windows/wfp_interceptor.exe
 

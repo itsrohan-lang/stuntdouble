@@ -12,7 +12,7 @@ build-ebpf:
 
 build-mac:
 	@echo "🍎 Building macOS Endpoint Security Framework Interceptor..."
-	clang -Wall -O2 mac/src/esf_interceptor.c -o mac/esf_interceptor -framework EndpointSecurity -framework Foundation
+	clang -Wall -O2 mac/src/esf_interceptor.c -o mac/esf_interceptor -lEndpointSecurity -lbsm -framework Foundation
 
 build-windows:
 	@echo "🪟 Building Windows Filtering Platform Interceptor..."

@@ -16,8 +16,10 @@ resources:
     memory: 128Mi
 
 securityContext:
-  privileged: true
+  privileged: false
   capabilities:
     add:
-      - SYS_ADMIN
+      - BPF
+      - PERFMON
       - NET_ADMIN
+      - SYS_RESOURCE
