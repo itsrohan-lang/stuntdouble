@@ -26,6 +26,7 @@ Read this before relying on StuntDouble for anything.
 | Filesystem scope | only the working directory is bind-mounted at `/workspace` |
 | Undo agent changes | workspace snapshot via git plumbing; `sd rewind` and `sd checkpoint` |
 | Zero-Trust API Credentials | dummy key substitution proxy (`ZeroTrustProxy`) on host egress |
+| Indirect Prompt Injection Guard | adversarial prompt vector detector & sanitizer via `sd guard prompt` |
 | Enterprise AI Data Loss Prevention | PII & secret inspection scanner via `sd dlp scan` |
 | Tamper-Evident Audit Ledger | HMAC-SHA256 signature chain verification via `/api/audit/verify` |
 | Synthetic Offline Mocking | auto-generate synthetic DB & API mocks via `sd mock` |
