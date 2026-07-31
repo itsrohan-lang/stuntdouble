@@ -96,13 +96,15 @@ echo "✅ Checksum verified."
 echo ">> Installing to ${INSTALL_DIR}..."
 if [ -w "$INSTALL_DIR" ]; then
     install -m 0755 "${TMPDIR_SD}/${BINARY_NAME}" "${INSTALL_DIR}/stuntdouble"
+    ln -sf "${INSTALL_DIR}/stuntdouble" "${INSTALL_DIR}/sd"
 else
     echo "   ${INSTALL_DIR} is not writable; escalating with sudo."
     need sudo
     sudo install -m 0755 "${TMPDIR_SD}/${BINARY_NAME}" "${INSTALL_DIR}/stuntdouble" \
         || die "failed to install to ${INSTALL_DIR}. Set INSTALL_DIR to a writable location."
+    sudo ln -sf "${INSTALL_DIR}/stuntdouble" "${INSTALL_DIR}/sd"
 fi
 
 echo ""
-echo "✅ StuntDouble ${TAG} installed to ${INSTALL_DIR}/stuntdouble"
-echo "Run 'stuntdouble --help' to get started."
+echo "✅ StuntDouble ${TAG} installed to ${INSTALL_DIR}/stuntdouble (alias 'sd')"
+echo "Run 'stuntdouble --help' or 'sd --help' to get started."
