@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -40,6 +41,29 @@ var runCmd = &cobra.Command{
 		// Never continue silently: without the interceptor the agent has
 		// unrestricted network access, and the caller has to know that.
 		allowUnenforced, _ := cmd.Flags().GetBool("allow-unenforced-network")
+		envImage, _ := cmd.Flags().GetString("env")
+		maxDurationStr, _ := cmd.Flags().GetString("max-duration")
+		strictDLP, _ := cmd.Flags().GetBool("strict-dlp")
+
+		// Filter out sd run flags if passed after agentName (e.g. sd run claude --allow-unenforced-network)
+		var forwardedArgs []string
+		for _, arg := range args[1:] {
+			switch {
+			case arg == "--allow-unenforced-network":
+				allowUnenforced = true
+			case arg == "--strict-dlp":
+				strictDLP = true
+			case strings.HasPrefix(arg, "--max-duration="):
+				maxDurationStr = strings.TrimPrefix(arg, "--max-duration=")
+			case strings.HasPrefix(arg, "--env="):
+				envImage = strings.TrimPrefix(arg, "--env=")
+			case strings.HasPrefix(arg, "-e="):
+				envImage = strings.TrimPrefix(arg, "-e=")
+			default:
+				forwardedArgs = append(forwardedArgs, arg)
+			}
+		}
+
 		ebpfHook, err := ebpf.AttachInterceptor("/sys/fs/cgroup/")
 		switch {
 		case err == nil:
@@ -55,7 +79,7 @@ var runCmd = &cobra.Command{
 
 		fmt.Printf("🚀 Starting StuntDouble sandbox for agent: %s\n", agentName)
 
-		agentCmd := resolveAgentCommand(agentName, args[1:])
+		agentCmd := resolveAgentCommand(agentName, forwardedArgs)
 
 		// Capture a snapshot of the workspace before the agent touches it.
 		if err := snapshot.Create(cwd); err != nil {
@@ -68,9 +92,6 @@ var runCmd = &cobra.Command{
 		}
 
 		startTime := time.Now()
-		envImage, _ := cmd.Flags().GetString("env")
-		maxDurationStr, _ := cmd.Flags().GetString("max-duration")
-		strictDLP, _ := cmd.Flags().GetBool("strict-dlp")
 
 		if strictDLP {
 			fmt.Println("🛡️ [DLP Guardrail] Enforcing strict Data Loss Prevention & egress leak blocking.")
