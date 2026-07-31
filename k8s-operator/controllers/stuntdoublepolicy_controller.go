@@ -1,10 +1,11 @@
 package controllers
 
-import (
+	import (
 	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,12 +40,28 @@ func (r *StuntDoublePolicyReconciler) Reconcile(ctx context.Context, req ctrl.Re
 		"network": policy.Spec.Network,
 	})
 
-	resp, err := http.Post("http://stuntdouble-control-plane:8080/policy", "application/json", bytes.NewBuffer(payload))
+	controlPlaneURL := os.Getenv("STUNTDOUBLE_CONTROL_PLANE_URL")
+	if controlPlaneURL == "" {
+		controlPlaneURL = "http://stuntdouble-control-plane:4439/policy"
+	}
+	token := os.Getenv("STUNTDOUBLE_TOKEN")
+
+	reqHTTP, err := http.NewRequestWithContext(ctx, "POST", controlPlaneURL, bytes.NewBuffer(payload))
 	if err != nil {
-		logger.Error(err, "Failed to sync policy to Control Plane, simulating fallback...")
+		logger.Error(err, "Failed to create HTTP request for Control Plane")
 	} else {
-		defer resp.Body.Close()
-		logger.Info("Successfully synced policy to Control Plane", "Status", resp.Status)
+		reqHTTP.Header.Set("Content-Type", "application/json")
+		if token != "" {
+			reqHTTP.Header.Set("Authorization", "Bearer "+token)
+		}
+		client := &http.Client{}
+		resp, err := client.Do(reqHTTP)
+		if err != nil {
+			logger.Error(err, "Failed to sync policy to Control Plane, simulating fallback...")
+		} else {
+			defer resp.Body.Close()
+			logger.Info("Successfully synced policy to Control Plane", "Status", resp.Status)
+		}
 	}
 	
 	policy.Status.ActiveAgents = 1
