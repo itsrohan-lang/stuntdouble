@@ -24,7 +24,26 @@ type StuntDockerClient struct {
 
 // NewClient initializes a native connection to the host Docker daemon
 func NewClient() (*StuntDockerClient, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	opts := []client.Opt{
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	}
+
+	if os.Getenv("DOCKER_HOST") == "" {
+		home, _ := os.UserHomeDir()
+		if home != "" {
+			orbSocket := filepath.Join(home, ".orbstack", "run", "docker.sock")
+			dockerDesktopSocket := filepath.Join(home, ".docker", "run", "docker.sock")
+
+			if _, err := os.Stat(orbSocket); err == nil {
+				opts = append(opts, client.WithHost("unix://"+orbSocket))
+			} else if _, err := os.Stat(dockerDesktopSocket); err == nil {
+				opts = append(opts, client.WithHost("unix://"+dockerDesktopSocket))
+			}
+		}
+	}
+
+	cli, err := client.NewClientWithOpts(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to docker daemon: %w", err)
 	}
@@ -76,31 +95,45 @@ func (sdc *StuntDockerClient) SpawnIsolatedAgent(ctx context.Context, agentCmd [
 	}
 
 	sidecarCmd := exec.CommandContext(ctx, "docker", sidecarArgs...)
+	useSidecar := true
 	if err := sidecarCmd.Run(); err != nil {
-		return fmt.Errorf("failed to inject keploy sidecar: %w", err)
+		fmt.Println("⚠️  Keploy sidecar injection unavailable; proceeding with standalone container sandbox...")
+		useSidecar = false
+	} else {
+		// Ensure the sidecar is cleaned up after the agent finishes
+		defer func() {
+			fmt.Println(">> [Stunt Layer] Tearing down Keploy sidecar...")
+			exec.Command("docker", "kill", sidecarName).Run()
+		}()
 	}
 
-	// Ensure the sidecar is cleaned up after the agent finishes
-	defer func() {
-		fmt.Println(">> [Stunt Layer] Tearing down Keploy sidecar...")
-		exec.Command("docker", "kill", sidecarName).Run()
-	}()
+	fmt.Printf(">> [Native Engine] Spawning %s agent with --cap-drop=ALL...\n", envImage)
 
-	fmt.Printf(">> [Native Engine] Spawning %s agent with --cap-drop=ALL attached to sidecar network...\n", envImage)
+	// Detect if stdin is a terminal to pass -it or -i
+	interactiveFlag := "-i"
+	if fileInfo, err := os.Stdin.Stat(); err == nil && (fileInfo.Mode()&os.ModeCharDevice) != 0 {
+		interactiveFlag = "-it"
+	}
 
 	// 2. Start the Agent container, attaching dummy credentials for zero-trust protection
 	args := []string{
-		"run", "-it", "--rm",
+		"run", interactiveFlag, "--rm",
 		"--cap-drop=ALL",
 		"--memory=2g",
 		"--cpus=1.0",
 		"-e", fmt.Sprintf("ANTHROPIC_API_KEY=%s", proxy.DummyAnthropicKey),
 		"-e", fmt.Sprintf("OPENAI_API_KEY=%s", proxy.DummyOpenAIKey),
-		fmt.Sprintf("--network=container:%s", sidecarName),
+	}
+
+	if useSidecar {
+		args = append(args, fmt.Sprintf("--network=container:%s", sidecarName))
+	}
+
+	args = append(args,
 		"-v", fmt.Sprintf("%s:/workspace", mountDir),
 		"-w", "/workspace",
 		envImage,
-	}
+	)
 	args = append(args, agentCmd...)
 
 	cmd := exec.CommandContext(ctx, "docker", args...)

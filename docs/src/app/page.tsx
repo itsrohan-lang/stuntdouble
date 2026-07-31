@@ -15,7 +15,7 @@ export default function Home() {
         {/* Hero Section */}
         <section className="text-center w-full flex flex-col items-center gap-8 animate-float max-w-4xl">
           <div className="inline-flex px-4 py-1.5 rounded-full border border-[rgba(0,240,255,0.3)] bg-[rgba(0,240,255,0.05)] text-[var(--accent)] text-sm font-semibold tracking-widest uppercase shadow-[0_0_20px_rgba(0,240,255,0.15)]">
-            v3.4.1 Engine Live • Zero-Copy Rewinds
+            v3.4.2 Engine Live • Zero-Copy Rewinds
           </div>
           <h1 className="text-6xl sm:text-8xl font-extrabold tracking-tight text-white leading-[1.1]">
             Deploy Agents. <br/>
