@@ -9,7 +9,10 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -52,6 +55,8 @@ type AuditLog struct {
 	Target    string    `json:"target"`
 	Action    string    `json:"action"`
 	Status    string    `json:"status"`
+	Signature string    `json:"signature"`
+	PrevHash  string    `json:"prev_hash"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -235,11 +240,27 @@ func handleAuditLogs(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
+
+		if logEntry.CreatedAt.IsZero() {
+			logEntry.CreatedAt = time.Now()
+		}
+
+		// Fetch previous entry for cryptographic chaining
+		var lastEntry AuditLog
+		if err := db.Order("id desc").First(&lastEntry).Error; err == nil {
+			logEntry.PrevHash = lastEntry.Signature
+		} else {
+			logEntry.PrevHash = "GENESIS_BLOCK"
+		}
+
+		logEntry.Signature = computeAuditSignature(authToken, logEntry)
+
 		if err := db.Create(&logEntry).Error; err != nil {
 			http.Error(w, "Failed to record audit log", http.StatusInternalServerError)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
+		json.NewEncoder(w).Encode(logEntry)
 	case http.MethodGet:
 		var logs []AuditLog
 		db.Order("created_at desc").Limit(50).Find(&logs)
@@ -247,6 +268,38 @@ func handleAuditLogs(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func handleAuditVerify(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var logs []AuditLog
+	db.Order("id asc").Find(&logs)
+
+	tamperedCount := 0
+	for i, entry := range logs {
+		expectedSig := computeAuditSignature(authToken, entry)
+		if entry.Signature != expectedSig {
+			tamperedCount++
+		}
+		if i > 0 && entry.PrevHash != logs[i-1].Signature {
+			tamperedCount++
+		}
+	}
+
+	response := map[string]interface{}{
+		"valid":            tamperedCount == 0,
+		"total_records":    len(logs),
+		"tampered_records": tamperedCount,
+	}
+	json.NewEncoder(w).Encode(response)
+}
+
+func computeAuditSignature(key string, entry AuditLog) string {
+	h := hmac.New(sha256.New, []byte(key))
+	payload := fmt.Sprintf("%s:%s:%s:%s:%s:%d", entry.AgentID, entry.Target, entry.Action, entry.Status, entry.PrevHash, entry.CreatedAt.Unix())
+	h.Write([]byte(payload))
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // handleKeployMock returns a synthetic success payload for agents whose
@@ -305,6 +358,7 @@ func main() {
 	mux.HandleFunc("/policy", withCORS(requireAuth(handlePolicy)))
 	mux.HandleFunc("/api/stats", withCORS(requireAuth(handleStats)))
 	mux.HandleFunc("/api/audit", withCORS(requireAuth(handleAuditLogs)))
+	mux.HandleFunc("/api/audit/verify", withCORS(requireAuth(handleAuditVerify)))
 	mux.HandleFunc("/api/keploy/mock", withCORS(requireAuth(handleKeployMock)))
 	mux.HandleFunc("/graphql", withCORS(requireAuth(handleGraphQL)))
 	mux.Handle("/metrics", requireAuth(promhttp.Handler().ServeHTTP))

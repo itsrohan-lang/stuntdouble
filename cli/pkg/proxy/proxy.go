@@ -10,6 +10,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/stuntdouble/cli/pkg/dlp"
 )
 
 const (
@@ -20,12 +22,13 @@ const (
 // ZeroTrustProxy intercepts outgoing API calls from sandboxed agents, replacing
 // dummy credentials with real host keys on egress so agents never hold real secrets.
 type ZeroTrustProxy struct {
-	server       *http.Server
-	listener     net.Listener
-	listenAddr   string
+	server        *http.Server
+	listener      net.Listener
+	listenAddr    string
 	realAnthropic string
-	realOpenAI    string
-	mu           sync.RWMutex
+	realOpenAI     string
+	dlpScanner    *dlp.Scanner
+	mu            sync.RWMutex
 }
 
 // NewZeroTrustProxy initializes a local API key substitution proxy
@@ -33,6 +36,7 @@ func NewZeroTrustProxy() *ZeroTrustProxy {
 	return &ZeroTrustProxy{
 		realAnthropic: os.Getenv("ANTHROPIC_API_KEY"),
 		realOpenAI:    os.Getenv("OPENAI_API_KEY"),
+		dlpScanner:    dlp.NewScanner(),
 	}
 }
 

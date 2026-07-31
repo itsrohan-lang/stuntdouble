@@ -36,6 +36,12 @@ var swarmCmd = &cobra.Command{
 		}
 
 		workspace, _ := os.Getwd()
+		redteam, _ := cmd.Flags().GetBool("redteam")
+
+		if redteam {
+			fmt.Println("⚔️ [Red-Team Swarm] Adding automated adversarial security verification node to StuntNet...")
+			args = append(args, "redteam-security-bot")
+		}
 
 		if err := sdClient.SpawnSwarm(ctx, args, workspace); err != nil {
 			fmt.Println("\n❌ Swarm orchestration failed:", err)
@@ -44,5 +50,6 @@ var swarmCmd = &cobra.Command{
 }
 
 func init() {
+	swarmCmd.Flags().Bool("redteam", false, "Spawn an automated adversarial Red-Team agent node inside StuntNet")
 	rootCmd.AddCommand(swarmCmd)
 }
