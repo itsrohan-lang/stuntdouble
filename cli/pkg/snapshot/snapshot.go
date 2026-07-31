@@ -13,10 +13,8 @@ import (
 // using Git's low-level plumbing commands, ensuring zero pollution to
 // the user's branch history or staging area.
 func Create(workspace string) error {
-	// Check if it's a git repo
-	if _, err := os.Stat(filepath.Join(workspace, ".git")); os.IsNotExist(err) {
-		fmt.Println("⚠️ [StuntDouble] Not a git repository. Skipping zero-copy snapshot.")
-		return nil
+	if err := ensureGitRepository(workspace); err != nil {
+		return err
 	}
 
 	index, err := os.CreateTemp("", "stuntdouble-index-*")
@@ -27,16 +25,14 @@ func Create(workspace string) error {
 	index.Close()
 	defer os.Remove(indexFile)
 
-	// Create a temporary index loaded with HEAD
+	// Create a temporary index loaded with HEAD (if present)
 	cmd1 := exec.Command("git", "read-tree", "HEAD")
 	cmd1.Env = append(os.Environ(), "GIT_INDEX_FILE="+indexFile)
 	cmd1.Dir = workspace
-	if err := cmd1.Run(); err != nil {
-		return err
-	}
+	_ = cmd1.Run()
 
 	// Add all current working directory files to the temporary index
-	cmd2 := exec.Command("git", "add", "-A")
+	cmd2 := exec.Command("git", "add", ".")
 	cmd2.Env = append(os.Environ(), "GIT_INDEX_FILE="+indexFile)
 	cmd2.Dir = workspace
 	if err := cmd2.Run(); err != nil {
@@ -129,8 +125,8 @@ func ListCheckpoints(workspace string) ([]string, error) {
 }
 
 func captureTreeHash(workspace string) (string, error) {
-	if _, err := os.Stat(filepath.Join(workspace, ".git")); os.IsNotExist(err) {
-		return "", fmt.Errorf("not a git repository")
+	if err := ensureGitRepository(workspace); err != nil {
+		return "", err
 	}
 
 	index, err := os.CreateTemp("", "stuntdouble-index-*")
@@ -141,14 +137,13 @@ func captureTreeHash(workspace string) (string, error) {
 	index.Close()
 	defer os.Remove(indexFile)
 
+	// Try loading HEAD if it exists, but ignore error if HEAD is not created yet (new repo)
 	cmd1 := exec.Command("git", "read-tree", "HEAD")
 	cmd1.Env = append(os.Environ(), "GIT_INDEX_FILE="+indexFile)
 	cmd1.Dir = workspace
-	if err := cmd1.Run(); err != nil {
-		return "", err
-	}
+	_ = cmd1.Run()
 
-	cmd2 := exec.Command("git", "add", "-A")
+	cmd2 := exec.Command("git", "add", ".")
 	cmd2.Env = append(os.Environ(), "GIT_INDEX_FILE="+indexFile)
 	cmd2.Dir = workspace
 	if err := cmd2.Run(); err != nil {
@@ -249,4 +244,28 @@ func untrackedFiles(workspace string) ([]string, error) {
 		files = append(files, string(part))
 	}
 	return files, nil
+}
+
+func ensureGitRepository(workspace string) error {
+	if _, err := os.Stat(filepath.Join(workspace, ".git")); os.IsNotExist(err) {
+		fmt.Println("⚡ [StuntDouble] Initializing zero-copy git index in non-git workspace...")
+		cmd := exec.Command("git", "init")
+		cmd.Dir = workspace
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("initializing git repository: %w", err)
+		}
+
+		// Create initial empty commit anchor so HEAD exists for git plumbing
+		cmdCommit := exec.Command("git", "-c", "user.name=StuntDouble", "-c", "user.email=stuntdouble@internal", "commit", "--allow-empty", "-m", "initial zero-copy snapshot anchor")
+		cmdCommit.Dir = workspace
+		_ = cmdCommit.Run()
+
+		gitignore := filepath.Join(workspace, ".gitignore")
+		f, err := os.OpenFile(gitignore, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err == nil {
+			f.WriteString("\n.stuntdouble/\n.stuntdouble.telemetry.json\n")
+			f.Close()
+		}
+	}
+	return nil
 }

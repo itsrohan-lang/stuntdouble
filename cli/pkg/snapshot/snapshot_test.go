@@ -41,12 +41,16 @@ func TestCreateAndRestorePreservesSnapshotUntrackedFiles(t *testing.T) {
 	assertMissing(t, workspace, ".stuntdouble/stunt.index")
 }
 
-func TestCreateNoopsOutsideGitRepository(t *testing.T) {
+func TestCreateInitializesGitRepositoryInNonGitWorkspace(t *testing.T) {
 	workspace := t.TempDir()
+	writeFile(t, workspace, "code.txt", "hello world\n")
+
 	if err := Create(workspace); err != nil {
-		t.Fatalf("Create() outside git repo error = %v", err)
+		t.Fatalf("Create() in non-git workspace error = %v", err)
 	}
-	assertMissing(t, workspace, ".stuntdouble/latest_snapshot.txt")
+	if _, err := os.Stat(filepath.Join(workspace, ".stuntdouble", "latest_snapshot.txt")); os.IsNotExist(err) {
+		t.Fatalf("latest_snapshot.txt was not created for non-git workspace")
+	}
 }
 
 func TestRestoreWithoutSnapshotReturnsError(t *testing.T) {
