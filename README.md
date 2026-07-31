@@ -26,10 +26,12 @@ Read this before relying on StuntDouble for anything.
 | Filesystem scope | only the working directory is bind-mounted at `/workspace` |
 | Undo agent changes | workspace snapshot via git plumbing; `sd rewind` and `sd checkpoint` |
 | Zero-Trust API Credentials | dummy key substitution proxy (`ZeroTrustProxy`) on host egress |
-| CI/CD Security Verification | automated policy compliance gate via `sd verify` |
+| Enterprise AI Data Loss Prevention | PII & secret inspection scanner via `sd dlp scan` |
+| Tamper-Evident Audit Ledger | HMAC-SHA256 signature chain verification via `/api/audit/verify` |
+| Synthetic Offline Mocking | auto-generate synthetic DB & API mocks via `sd mock` |
+| CI/CD Security & Red-Teaming | `sd verify` security gate & `sd swarm --redteam` adversarial node |
 | Native OS Interceptors | macOS EndpointSecurity (`mac/`) & Windows WFP (`windows/`) socket filters |
-| Traffic capture / mocks | Keploy sidecar (opt-in, via `sd record`) |
-| Run history | local JSON counter, optional control plane + dashboard |
+| Run history | local JSON counter, control plane + dashboard |
 
 **What does not work:**
 

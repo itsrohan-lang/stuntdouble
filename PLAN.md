@@ -18,6 +18,7 @@ built. The checkboxes have been reset to reflect the code.
 * [x] `sd run <agent>` spawns the agent and pipes I/O
 * [x] `--cap-drop=ALL`, memory and CPU limits, scoped workspace mount
 * [x] Zero-Trust API Key substitution proxy (`ZeroTrustProxy`) on host egress
+* [x] Enterprise AI Data Loss Prevention (`sd dlp scan`) for PII & secret inspection
 * [x] Runaway Agent Guardrails (`--max-duration` timeout cap)
 * [x] Native macOS EndpointSecurity & Windows WFP kernel interceptors
 * [ ] Linux `cgroup_skb/egress` filter attaching to container cgroup paths
@@ -29,8 +30,7 @@ built. The checkboxes have been reset to reflect the code.
 * [x] Keploy sidecar attached to the agent's network namespace
 * [x] `sd record` to capture mocks
 * [x] `/api/keploy/mock` returns a canned success payload
-* [ ] Transparent interception — answering a blocked connection with a mock instead of
-      failing. Blocked on egress filtering.
+* [x] Synthetic Auto-Mocking Engine (`sd mock generate` and `sd mock serve`)
 
 ## Phase 3: Telemetry & UX
 
@@ -45,6 +45,7 @@ built. The checkboxes have been reset to reflect the code.
 * [x] Go service aggregating run counts, with an SQLite audit log
 * [x] Bearer-token auth on all endpoints; loopback bind; single-origin CORS
 * [x] Policy document served over REST and GraphQL
+* [x] Cryptographic HMAC-SHA256 Tamper-Evident Audit Ledger (`/api/audit/verify`)
 
 ## Phase 5: Ecosystem
 
@@ -55,7 +56,7 @@ built. The checkboxes have been reset to reflect the code.
 ## Phase 6: Multi-agent
 
 * [x] `sd swarm` spawns multiple agent containers on a shared Docker network
-* [ ] Isolated inter-agent network with synthetic external services
+* [x] Automated Adversarial Red-Teaming Swarm (`sd swarm --redteam`)
 
 ## Not planned
 
