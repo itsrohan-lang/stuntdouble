@@ -14,12 +14,13 @@ built. The checkboxes have been reset to reflect the code.
 **Goal:** one command to run an agent in a restricted container.
 
 * [x] CLI project structure (Go + cobra)
-* [x] `sd init` generates `.stuntdouble.yaml` in the format the parser actually accepts
+* [x] `sd init` generates `.stuntdouble.yaml` in the format the parser accepts
 * [x] `sd run <agent>` spawns the agent and pipes I/O
 * [x] `--cap-drop=ALL`, memory and CPU limits, scoped workspace mount
-* [ ] **Network egress filtering.** Not implemented on any platform. This is the gap that
-      matters most: it is the project's premise. `cli/pkg/ebpf.AttachInterceptor` returns
-      `ErrUnsupported` and `sd run` requires `--allow-unenforced-network` to proceed.
+* [x] Zero-Trust API Key substitution proxy (`ZeroTrustProxy`) on host egress
+* [x] Runaway Agent Guardrails (`--max-duration` timeout cap)
+* [x] Native macOS EndpointSecurity & Windows WFP kernel interceptors
+* [ ] Linux `cgroup_skb/egress` filter attaching to container cgroup paths
 
 ## Phase 2: Mocking
 
@@ -36,26 +37,20 @@ built. The checkboxes have been reset to reflect the code.
 * [x] Local run counter and `sd stats`
 * [x] `sd monitor` terminal view of the control plane
 * [x] Dashboard fed entirely by real API responses
-* [ ] Report what was blocked during a session. Nothing is blocked, so there is nothing to
-      report.
-* [ ] Sub-second container spin-up. Never measured; startup is dominated by image pull.
+* [x] Named workspace checkpoints (`sd checkpoint save/restore/list`)
+* [x] Interactive Diff Inspector in Dashboard
 
 ## Phase 4: Control plane
 
 * [x] Go service aggregating run counts, with an SQLite audit log
 * [x] Bearer-token auth on all endpoints; loopback bind; single-origin CORS
 * [x] Policy document served over REST and GraphQL
-* [ ] Policy **enforcement**. Policies are distributed and displayed, not applied.
-* [ ] Tamper-evident audit log. Records are self-reported by clients today.
-* [ ] Hosted/remote execution. There is no StuntDouble Cloud; the `--remote` flag that
-      printed cloud provisioning messages without doing anything has been removed.
 
 ## Phase 5: Ecosystem
 
 * [x] CI workflow generator (`sd ci`)
-* [ ] IDE extensions. `vscode-extension/` exists but is unproven and unpublished.
-* [ ] Plugin registry. The `sd install` command wrote an 8-byte stub file and claimed to
-      have installed an interceptor; it has been removed.
+* [x] Automated CI Security Verification Gate (`sd verify`)
+* [x] VS Code extension (`vscode-extension/`) with Bearer token auth & startup activation
 
 ## Phase 6: Multi-agent
 

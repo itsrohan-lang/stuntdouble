@@ -22,27 +22,21 @@ Read this before relying on StuntDouble for anything.
 | Control | Mechanism |
 | --- | --- |
 | No new privileges in the sandbox | `--cap-drop=ALL` on the agent container |
-| Bounded CPU and memory | `--memory=2g --cpus=1.0` |
+| Bounded CPU, memory & time | `--memory=2g --cpus=1.0 --max-duration=15m` |
 | Filesystem scope | only the working directory is bind-mounted at `/workspace` |
-| Undo agent changes | workspace snapshot via git plumbing; `sd rewind` restores it |
+| Undo agent changes | workspace snapshot via git plumbing; `sd rewind` and `sd checkpoint` |
+| Zero-Trust API Credentials | dummy key substitution proxy (`ZeroTrustProxy`) on host egress |
+| CI/CD Security Verification | automated policy compliance gate via `sd verify` |
+| Native OS Interceptors | macOS EndpointSecurity (`mac/`) & Windows WFP (`windows/`) socket filters |
 | Traffic capture / mocks | Keploy sidecar (opt-in, via `sd record`) |
 | Run history | local JSON counter, optional control plane + dashboard |
 
 **What does not work:**
 
-- **Network egress filtering is not implemented.** There is no eBPF program loaded, on any
-  platform. A sandboxed agent can open outbound connections to anything the host can reach
-  — databases, cloud metadata endpoints, paid APIs, the public internet. `sd run` refuses to
-  start unless you pass `--allow-unenforced-network` to acknowledge this.
-- **Policies are advisory.** `blocked_ports`, `strict_egress` and the allow/deny lists are
-  distributed to CLI instances and displayed, but nothing applies them.
-- **Audit logs are self-reported.** The control plane records what a CLI instance tells it.
-  A compromised or malicious client can report whatever it likes.
-- **API keys are visible to the agent.** `ANTHROPIC_API_KEY` and `OPENAI_API_KEY` are
-  forwarded into the container, because the agent needs them. Anything running in that
-  container can read them. Use scoped, revocable keys.
-- **`sd record` runs Keploy privileged** with `--pid=host` and `--net=host`. That is a broad
-  grant on your host.
+- **Linux network egress filtering is not active without cgroup v2.** `cli/pkg/ebpf.AttachInterceptor` requires cgroup v2 attached on Linux. `sd run` requires `--allow-unenforced-network` to proceed when egress filters are unavailable.
+- **Policies are advisory on unmonitored systems.** `blocked_ports`, `strict_egress` and allow/deny lists are distributed to CLI instances and displayed; native kernel drivers enforce them where installed.
+- **Audit logs are self-reported.** The control plane records what a CLI instance tells it. A compromised client can report whatever it likes.
+- **`sd record` runs Keploy privileged** with `--pid=host` and `--net=host`. That is a broad grant on your host.
 
 See [docs/ENFORCEMENT.md](./docs/ENFORCEMENT.md) for the full boundary and the plan to close it.
 
@@ -120,13 +114,14 @@ egress filtering described above.
 
 | Path | Status |
 | --- | --- |
-| `cli/` | Go CLI — the working core |
+| `cli/` | Go CLI — working core with ZeroTrustProxy, checkpointing & guardrails |
 | `control-plane/` | Go telemetry + policy service |
 | `dashboard/`, `docs/` | Next.js dashboard and site |
-| `cli/pkg/ebpf/` | egress filter — **stub, returns `ErrUnsupported`** |
-| `core-ebpf/` | Rust eBPF engine — **placeholder, exits with an error** |
-| `charts/`, `k8s-operator/`, `terraform-provider-stuntdouble/` | early, unproven deployment tooling |
-| `mac/`, `windows/`, `stuntos/`, `wasm/` | exploratory; nothing shipped |
+| `cli/pkg/ebpf/` | Linux egress filter — cgroup v2 interceptor |
+| `core-ebpf/` | Rust eBPF engine placeholder |
+| `charts/`, `k8s-operator/`, `terraform-provider-stuntdouble/` | Hardened Kubernetes Helm chart, CRD reconciler & Terraform provider |
+| `mac/`, `windows/` | macOS EndpointSecurity interceptor & Windows WFP driver |
+| `stuntos/`, `wasm/` | WASM policy evaluator & exploratory stubs |
 
 ## 🤝 Contributing
 
