@@ -15,14 +15,14 @@ export default function Home() {
         {/* Hero Section */}
         <section className="text-center w-full flex flex-col items-center gap-8 animate-float max-w-4xl">
           <div className="inline-flex px-4 py-1.5 rounded-full border border-[rgba(0,240,255,0.3)] bg-[rgba(0,240,255,0.05)] text-[var(--accent)] text-sm font-semibold tracking-widest uppercase shadow-[0_0_20px_rgba(0,240,255,0.15)]">
-            v3.0 Engine Live • Zero-Copy Rewinds
+            v3.2.7 Engine Live • Zero-Copy Rewinds
           </div>
           <h1 className="text-6xl sm:text-8xl font-extrabold tracking-tight text-white leading-[1.1]">
             Deploy Agents. <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#8a2be2]">Without the Fear.</span>
           </h1>
           <p className="text-xl text-zinc-400 max-w-2xl mt-2 leading-relaxed font-light">
-            StuntDouble is the ultimate Zero-Trust Isolation Engine. We wrap autonomous tools like Claude Code and Copilot in hardware-level MicroVMs and drop destructive network calls using raw kernel eBPF hooks.
+            StuntDouble is the ultimate Zero-Trust Isolation Engine. We wrap autonomous coding agents like Claude Code and Copilot in restricted containers with dropped capabilities, resource limits, zero-copy rewinds, and native macOS &amp; Windows kernel interceptors.
           </p>
           
           <div className="flex gap-4 mt-4">
@@ -56,27 +56,27 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#00f0ff] transition-colors group">
-              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#00f0ff] transition-colors">sd init</h3>
-              <p className="text-zinc-400 leading-relaxed mb-4">Initializes a new StuntDouble sandbox in the current directory, generating your <code className="text-zinc-300 bg-zinc-800 px-1.5 py-0.5 rounded">.stuntdouble.yaml</code>.</p>
-            </div>
-
-            <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#8a2be2] transition-colors group">
-              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#8a2be2] transition-colors">sd run &lt;agent&gt;</h3>
-              <p className="text-zinc-400 leading-relaxed mb-4">Spawns a highly restricted Docker container wrapped in eBPF kernel hooks.</p>
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#00f0ff] transition-colors">sd run &lt;agent&gt;</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Spawns an agent inside a capability-dropped container with scoped workspace mounts.</p>
               <ul className="text-sm text-zinc-500 space-y-2 font-mono">
-                <li>--remote : Offload to StuntDouble Cloud</li>
-                <li>--env : Inject dynamic base runtime</li>
+                <li>--allow-unenforced-network : Acknowledge egress state</li>
+                <li>--env (-e) : Inject custom runtime base image</li>
               </ul>
             </div>
 
+            <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#8a2be2] transition-colors group">
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#8a2be2] transition-colors">sd rewind</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Restores tracked workspace files to the pre-run snapshot using zero-copy git plumbing and removes untracked agent artifacts.</p>
+            </div>
+
             <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#00f0ff] transition-colors group">
-              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#00f0ff] transition-colors">sd daemon</h3>
-              <p className="text-zinc-400 leading-relaxed mb-4">Starts the background control plane listener. Used by Kubernetes Operators and GitHub Actions to enforce policies dynamically.</p>
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#00f0ff] transition-colors">sd swarm &lt;agents...&gt;</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Orchestrates multiple AI agents inside an isolated Docker bridge network (StuntNet) with synthetic internal service communication.</p>
             </div>
 
             <div className="bg-[#111116] border border-zinc-800 p-8 rounded-3xl hover:border-[#8a2be2] transition-colors group">
-              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#8a2be2] transition-colors">sd chaos</h3>
-              <p className="text-zinc-400 leading-relaxed mb-4">Activates Chaos Monkey Testing. Injects simulated network drops and file access denials to benchmark agent recovery logic.</p>
+              <h3 className="text-2xl font-bold text-white mb-2 font-mono group-hover:text-[#8a2be2] transition-colors">sd record &lt;command&gt;</h3>
+              <p className="text-zinc-400 leading-relaxed mb-4">Runs target commands under a Keploy sidecar to capture outbound database and API traffic into replayable mock definitions.</p>
             </div>
           </div>
         </section>
