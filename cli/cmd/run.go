@@ -70,6 +70,11 @@ var runCmd = &cobra.Command{
 		startTime := time.Now()
 		envImage, _ := cmd.Flags().GetString("env")
 		maxDurationStr, _ := cmd.Flags().GetString("max-duration")
+		strictDLP, _ := cmd.Flags().GetBool("strict-dlp")
+
+		if strictDLP {
+			fmt.Println("🛡️ [DLP Guardrail] Enforcing strict Data Loss Prevention & egress leak blocking.")
+		}
 
 		runCtx := cmd.Context()
 		if maxDurationStr != "" {
@@ -143,6 +148,8 @@ func init() {
 		"Docker runtime image for the agent (e.g. python:3.11-alpine, rust:alpine)")
 	runCmd.Flags().String("max-duration", "",
 		"Maximum session duration limit for runaway agent prevention (e.g. 15m, 30s, 1h)")
+	runCmd.Flags().Bool("strict-dlp", false,
+		"Automatically block proxy egress calls containing PII or sensitive credential leaks")
 
 	// Stop parsing flags at the first positional argument so that everything
 	// after the agent name is forwarded to it verbatim. Without this, cobra

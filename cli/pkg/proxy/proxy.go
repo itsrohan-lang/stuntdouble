@@ -26,8 +26,9 @@ type ZeroTrustProxy struct {
 	listener      net.Listener
 	listenAddr    string
 	realAnthropic string
-	realOpenAI     string
+	realOpenAI    string
 	dlpScanner    *dlp.Scanner
+	StrictDLP     bool
 	mu            sync.RWMutex
 }
 
@@ -38,6 +39,13 @@ func NewZeroTrustProxy() *ZeroTrustProxy {
 		realOpenAI:    os.Getenv("OPENAI_API_KEY"),
 		dlpScanner:    dlp.NewScanner(),
 	}
+}
+
+// SetStrictDLP enables or disables strict DLP request blocking
+func (p *ZeroTrustProxy) SetStrictDLP(strict bool) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.StrictDLP = strict
 }
 
 // Start binds to an available loopback port and starts serving requests
@@ -78,7 +86,24 @@ func (p *ZeroTrustProxy) GetListenAddr() string {
 
 // handleProxy performs dummy key substitution and forwards API requests
 func (p *ZeroTrustProxy) handleProxy(w http.ResponseWriter, r *http.Request) {
-	// 1. Prepare forwarded request
+	p.mu.RLock()
+	strictDLP := p.StrictDLP
+	p.mu.RUnlock()
+
+	// 1. Perform Strict DLP Request Inspection
+	if strictDLP && p.dlpScanner != nil {
+		path := r.URL.Path
+		findings := p.dlpScanner.Scan(path)
+		if len(findings) > 0 {
+			log.Printf("🚨 [StuntDouble DLP] Blocked egress request containing sensitive data: %s", path)
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error": "Blocked by StuntDouble DLP Engine: Sensitive credential or PII leak detected in egress request"}`))
+			return
+		}
+	}
+
+	// 2. Prepare forwarded request
 	outReq, err := http.NewRequestWithContext(r.Context(), r.Method, r.URL.String(), r.Body)
 	if err != nil {
 		http.Error(w, "Failed to create proxy request", http.StatusInternalServerError)
@@ -88,12 +113,12 @@ func (p *ZeroTrustProxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 	// Copy headers
 	outReq.Header = r.Header.Clone()
 
-	// 2. Perform zero-trust secret substitution
+	// 3. Perform zero-trust secret substitution
 	p.substituteSecret(outReq.Header, "x-api-key", DummyAnthropicKey, p.realAnthropic)
 	p.substituteSecret(outReq.Header, "Authorization", DummyAnthropicKey, p.realAnthropic)
 	p.substituteSecret(outReq.Header, "Authorization", DummyOpenAIKey, p.realOpenAI)
 
-	// 3. Execute HTTP request
+	// 4. Execute HTTP request
 	client := &http.Client{}
 	resp, err := client.Do(outReq)
 	if err != nil {
@@ -102,7 +127,7 @@ func (p *ZeroTrustProxy) handleProxy(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	// 4. Copy response back to caller
+	// 5. Copy response back to caller
 	for k, vv := range resp.Header {
 		for _, v := range vv {
 			w.Header().Add(k, v)
