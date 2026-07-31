@@ -7,11 +7,17 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )
+
+type ClientConfig struct {
+	ApiUrl   string
+	ApiToken string
+}
 
 // Provider configures the StuntDouble Terraform Provider
 func Provider() *schema.Provider {
@@ -20,7 +26,7 @@ func Provider() *schema.Provider {
 			"api_url": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("STUNTDOUBLE_API_URL", "https://api.stuntdouble.io"),
+				DefaultFunc: schema.EnvDefaultFunc("STUNTDOUBLE_API_URL", "http://localhost:4439"),
 				Description: "The URL of the StuntDouble Control Plane.",
 			},
 			"api_token": {
@@ -34,7 +40,14 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"stuntdouble_policy": resourcePolicy(),
 		},
+		ConfigureContextFunc: providerConfigure,
 	}
+}
+
+func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
+	apiUrl := d.Get("api_url").(string)
+	apiToken := d.Get("api_token").(string)
+	return &ClientConfig{ApiUrl: apiUrl, ApiToken: apiToken}, nil
 }
 
 func resourcePolicy() *schema.Resource {
@@ -84,13 +97,23 @@ func resourcePolicyCreate(ctx context.Context, d *schema.ResourceData, m interfa
 	}
 	body, _ := json.Marshal(payload)
 
-	// Make actual HTTP request to Control Plane
-	apiUrl := "http://localhost:8080/policy" // Default local control plane
-	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(body))
+	apiUrl := "http://localhost:4439/policy"
+	token := ""
+	if config, ok := m.(*ClientConfig); ok && config != nil {
+		if config.ApiUrl != "" {
+			apiUrl = strings.TrimRight(config.ApiUrl, "/") + "/policy"
+		}
+		token = config.ApiToken
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", apiUrl, bytes.NewBuffer(body))
 	if err != nil {
 		return diag.FromErr(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

@@ -23,7 +23,9 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [telemetry, setTelemetry] = useState<{ total_runs: number } | null>(null);
   const [enforcement, setEnforcement] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
+  const [auditError, setAuditError] = useState<string | null>(null);
+  const error = statsError || auditError;
   const [isDeploying, setIsDeploying] = useState(false);
   const [policyJson, setPolicyJson] = useState(JSON.stringify({
     org_id: "default",
@@ -42,9 +44,9 @@ export default function Dashboard() {
         body: policyJson
       });
       if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
-      setError(null);
+      setStatsError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setStatsError(e instanceof Error ? e.message : String(e));
     } finally {
       setIsDeploying(false);
     }
@@ -59,10 +61,10 @@ export default function Dashboard() {
         const res = await fetch(`${CONTROL_PLANE}/api/stats`, { headers: authHeaders() });
         if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
         setTelemetry(await res.json());
-        setError(null);
+        setStatsError(null);
       } catch (e) {
         setTelemetry(null);
-        setError(e instanceof Error ? e.message : String(e));
+        setStatsError(e instanceof Error ? e.message : String(e));
       }
     };
 
@@ -82,8 +84,9 @@ export default function Dashboard() {
         if (!res.ok) throw new Error(`Control plane returned ${res.status}`);
         const data = await res.json();
         setAuditLogs(Array.isArray(data) ? data : []);
+        setAuditError(null);
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setAuditError(e instanceof Error ? e.message : String(e));
       }
     };
 

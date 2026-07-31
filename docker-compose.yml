@@ -7,7 +7,7 @@ services:
     ports:
       - "4439:4439"
     volumes:
-      - stunt_audit_data:/app
+      - stunt_audit_data:/app/db
     environment:
       - GIN_MODE=release
     restart: unless-stopped

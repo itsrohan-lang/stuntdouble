@@ -81,7 +81,7 @@ curl --fail --silent --show-error --location \
     -o "${TMPDIR_SD}/SHA256SUMS" "${BASE_URL}/SHA256SUMS" \
     || die "could not download SHA256SUMS for ${TAG}. Refusing to install an unverified binary."
 
-EXPECTED="$(grep " \*\?${BINARY_NAME}\$" "${TMPDIR_SD}/SHA256SUMS" | cut -d' ' -f1 || true)"
+EXPECTED="$(grep -E "( |\*)${BINARY_NAME}\$" "${TMPDIR_SD}/SHA256SUMS" | awk '{print $1}' || true)"
 [ -n "$EXPECTED" ] || die "no checksum for ${BINARY_NAME} in SHA256SUMS. Refusing to install."
 
 ACTUAL="$(sha256 "${TMPDIR_SD}/${BINARY_NAME}")"

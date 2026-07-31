@@ -73,17 +73,29 @@ export function activate(context: vscode.ExtensionContext) {
     let lastSeenLogId = 0;
 
     // Background polling for new blocks from Control Plane
-    setInterval(() => {
-        http.get('http://localhost:4439/api/audit', (res) => {
+    const pollInterval = setInterval(() => {
+        const token = process.env.STUNTDOUBLE_TOKEN || vscode.workspace.getConfiguration('stuntdouble').get<string>('token') || '';
+        const reqOptions: http.RequestOptions = {
+            hostname: 'localhost',
+            port: 4439,
+            path: '/api/audit',
+            method: 'GET',
+            headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        };
+
+        http.get(reqOptions, (res) => {
+            if (res.statusCode !== 200) {
+                return;
+            }
             let data = '';
             res.on('data', chunk => data += chunk);
             res.on('end', () => {
                 try {
                     const logs = JSON.parse(data);
-                    if (logs && logs.length > 0) {
+                    if (Array.isArray(logs) && logs.length > 0) {
                         const latestLog = logs[0];
                         if (latestLog.id > lastSeenLogId) {
-                            if (lastSeenLogId !== 0 && latestLog.status.includes('Blocked')) {
+                            if (lastSeenLogId !== 0 && latestLog.status && latestLog.status.includes('Blocked')) {
                                 vscode.window.showWarningMessage(`🚨 StuntDouble Blocked Agent! The agent '${latestLog.agent_id}' attempted to access '${latestLog.target}' but was intercepted by enterprise policy.`);
                             }
                             lastSeenLogId = latestLog.id;
@@ -98,7 +110,12 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }, 3000);
 
-    context.subscriptions.push(disposableRun, disposableStealth, disposableDashboard);
+    context.subscriptions.push(
+        disposableRun,
+        disposableStealth,
+        disposableDashboard,
+        { dispose: () => clearInterval(pollInterval) }
+    );
 }
 
 export function deactivate() {}
