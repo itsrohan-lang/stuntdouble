@@ -16,13 +16,15 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('http://localhost:8080/api/stats');
+        const token = process.env.NEXT_PUBLIC_STUNTDOUBLE_TOKEN ?? '';
+        const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+        const res = await fetch('http://localhost:4439/api/stats', { headers });
         if (!res.ok) throw new Error("API Offline");
         const data = await res.json();
         setStats(data);
         setError(null);
       } catch {
-        setError("Control Plane Offline. Run 'stuntdouble serve' locally.");
+        setError("Control Plane Offline. Start control plane with 'cd control-plane && go run .'");
       }
     };
 
@@ -142,10 +144,10 @@ export default function Dashboard() {
           {/* Client connection status only. This is not a kernel log: there is no
               kernel component to stream events from. */}
           <div className="p-6 font-mono text-sm h-64 overflow-y-auto flex flex-col gap-2">
-            {error && <div className="text-red-400">ERROR: Connection to localhost:8080 refused. Start &apos;stuntdouble serve&apos;.</div>}
+            {error && <div className="text-red-400">ERROR: Connection to localhost:4439 refused. Run &apos;cd control-plane &amp;&amp; go run .&apos;</div>}
             {!error && stats && (
               <>
-                <div className="text-green-400">Connected to the local telemetry API on port 8080.</div>
+                <div className="text-green-400">Connected to the local telemetry API on port 4439.</div>
                 <div className="text-zinc-500">Polling /api/stats every 2s.</div>
               </>
             )}
