@@ -58,6 +58,14 @@ aborts if it cannot. If you would rather not pipe a script to a shell, download
 npm install -g stuntdouble-sandbox-cli
 ```
 
+### Uninstallation
+
+To cleanly remove StuntDouble CLI binaries and global npm packages from your system:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/itsrohan-lang/stuntdouble/main/uninstall.sh | bash
+```
+
 ### 2. Sandbox an agent
 
 ```bash
