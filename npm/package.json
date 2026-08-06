@@ -8,7 +8,23 @@
     "sd": "bin/stuntdouble.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "files": [
+    "bin/stuntdouble.js",
+    "scripts/postinstall.js",
+    "scripts/download.js"
+  ],
+  "engines": {
+    "node": ">=14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itsrohan-lang/stuntdouble.git"
+  },
+  "homepage": "https://github.com/itsrohan-lang/stuntdouble#readme",
+  "bugs": {
+    "url": "https://github.com/itsrohan-lang/stuntdouble/issues"
   },
   "keywords": [
     "ai",

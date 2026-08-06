@@ -17,7 +17,11 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
+      # Only patch and minor bumps merge unattended. Major bumps carry breaking
+      # changes (e.g. typescript 5->7, eslint 9->10) and must be reviewed by a
+      # human, so they are left open rather than auto-merged.
       - name: Auto-merge for Dependabot PRs
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: gh pr merge --auto --merge "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}

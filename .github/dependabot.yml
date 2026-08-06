@@ -63,3 +63,51 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps)"
+
+  # Maintain dependencies for the Kubernetes Operator (Go)
+  - package-ecosystem: "gomod"
+    directory: "/k8s-operator"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the Terraform Provider (Go)
+  - package-ecosystem: "gomod"
+    directory: "/terraform-provider-stuntdouble"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the WebAssembly edge policy engine (Go)
+  - package-ecosystem: "gomod"
+    directory: "/wasm"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the Next.js SOC Dashboard
+  - package-ecosystem: "npm"
+    directory: "/dashboard"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the Electron Desktop App
+  - package-ecosystem: "npm"
+    directory: "/desktop-app"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Maintain dependencies for the Rust eBPF probes
+  - package-ecosystem: "cargo"
+    directory: "/core-ebpf"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(deps)"

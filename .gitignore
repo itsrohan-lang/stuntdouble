@@ -21,6 +21,7 @@ dist/
 
 # Go / provider build artifacts
 terraform-provider-stuntdouble/terraform-provider-stuntdouble
+terraform-provider-stuntdouble/bin/
 
 # Config files (for testing)
 .stuntdouble.yaml
@@ -36,6 +37,11 @@ stuntdouble-*
 /control-plane/cp-*
 /control-plane/control-plane
 /core-ebpf/target/
+
+# npm wrapper core binary — downloaded per-platform by npm/scripts/postinstall.js,
+# never committed (a single binary can only ever match one platform).
+/npm/bin/sd
+/npm/bin/sd.exe
 
 # StuntDouble Local State
 .stuntdouble.telemetry.json
