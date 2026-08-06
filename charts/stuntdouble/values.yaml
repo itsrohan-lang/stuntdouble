@@ -1,7 +1,8 @@
 image:
   repository: itsrohan/stuntdouble
   pullPolicy: IfNotPresent
-  tag: "v3.1.2"
+  # Keep in step with the released CLI version.
+  tag: "v3.6.0"
 
 daemonset:
   name: stuntdouble-daemon
@@ -15,11 +16,54 @@ resources:
     cpu: 100m
     memory: 128Mi
 
+# ---------------------------------------------------------------------------
+# Host access
+#
+# READ THIS BEFORE SETTING enabled: true.
+#
+# Every grant below was provisioned for the eBPF egress-filtering engine
+# described in docs/ENFORCEMENT.md. That engine is not implemented:
+# cli/pkg/ebpf.AttachInterceptor returns ErrUnsupported on every platform and
+# the BPF program is never compiled. So these permissions currently buy no
+# enforcement whatsoever — they are pure cost.
+#
+# The docker.sock mount in particular is node-root. `readOnly: true` restricts
+# operations on the socket inode; it does not stop a process from connecting to
+# the socket and issuing Docker API calls, and anything that can call the Docker
+# API can start a privileged container on that node.
+#
+# Leave this disabled until the eBPF engine actually exists. With it disabled
+# the DaemonSet runs with no host namespaces, no host mounts and no added
+# capabilities.
+# ---------------------------------------------------------------------------
+hostAccess:
+  enabled: false
+
+  # Share the host network namespace, so a BPF program could attach to the
+  # host's interfaces. Also exposes host-local services to this pod.
+  hostNetwork: true
+
+  # Mounted so the loader could resolve the cgroup v2 path to attach to.
+  cgroupPath: /sys/fs/cgroup
+
+  # Mounted so the daemon could inspect sandbox containers. This is the
+  # node-root grant; see above.
+  dockerSocket: /var/run/docker.sock
+
 securityContext:
+  # Not required even by the intended eBPF design — CAP_BPF and CAP_PERFMON
+  # exist precisely so that loading a program does not need full privilege.
   privileged: false
+
+  # Refuses to start the container if the image's USER resolves to root. Set to
+  # false if the published image has not yet been changed to run as non-root;
+  # the pod will otherwise fail with CreateContainerConfigError.
+  runAsNonRoot: true
+
   capabilities:
+    # Only applied when hostAccess.enabled is true. ALL is always dropped first.
     add:
-      - BPF
-      - PERFMON
-      - NET_ADMIN
-      - SYS_RESOURCE
+      - BPF          # load and attach the BPF program
+      - PERFMON      # read BPF maps / perf events
+      - NET_ADMIN    # attach the cgroup_skb hook
+      - SYS_RESOURCE # raise RLIMIT_MEMLOCK for map allocation
