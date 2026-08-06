@@ -20,7 +20,7 @@ jobs:
       # version used by ci.yml/test.yml. A lower pin still builds via automatic
       # toolchain download, but silently adds a toolchain fetch to every release.
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.25'
 
