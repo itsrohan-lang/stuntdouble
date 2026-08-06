@@ -21,7 +21,7 @@ jobs:
       # is a hard failure: it sets GOTOOLCHAIN=local, disabling the automatic
       # toolchain download that masks a mismatch.
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version: '1.26'
 
