@@ -21,11 +21,11 @@ jobs:
           - k8s-operator
           - terraform-provider-stuntdouble
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.26'
 
       - name: go build
         working-directory: ${{ matrix.module }}
@@ -45,11 +45,11 @@ jobs:
     name: WebAssembly build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.26'
 
       - name: go build (wasm)
         working-directory: wasm
@@ -63,11 +63,11 @@ jobs:
     name: Cross-compile CLI
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.26'
 
       # The CLI has per-platform enforcement backends behind build tags, so a
       # change to one can break another. Compile all release targets.
@@ -83,7 +83,7 @@ jobs:
     name: Shellcheck install.sh
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - run: shellcheck install.sh
 
   # The CLI is the shipped artifact; a build that links but panics on startup
@@ -92,11 +92,11 @@ jobs:
     name: CLI smoke test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v7
         with:
-          go-version: '1.25'
+          go-version: '1.26'
 
       - name: Build and run
         working-directory: ./cli
@@ -109,9 +109,9 @@ jobs:
     name: Docs site build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'npm'

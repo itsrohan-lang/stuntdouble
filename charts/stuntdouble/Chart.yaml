@@ -5,4 +5,4 @@ type: application
 # 2.0.0: host namespaces, hostPath mounts and added capabilities are now opt-in
 # via hostAccess.enabled (default false). Previously granted unconditionally.
 version: 2.0.0
-appVersion: "3.5.0"
+appVersion: "3.6.0"
