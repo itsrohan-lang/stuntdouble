@@ -2,7 +2,7 @@ image:
   repository: itsrohan/stuntdouble
   pullPolicy: IfNotPresent
   # Keep in step with the released CLI version.
-  tag: "v3.5.0"
+  tag: "v3.6.0"
 
 daemonset:
   name: stuntdouble-daemon
