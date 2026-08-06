@@ -2,6 +2,8 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:;">
     <title>StuntDouble Desktop</title>
     <style>
       body {
@@ -48,21 +50,22 @@
     <div id="console">Ready...</div>
 
     <script>
-      const { ipcRenderer } = require('electron');
+      // window.stuntdouble is injected by preload.js via contextBridge. This
+      // context has no Node access, so all privileged work goes through it.
+      const consoleEl = document.getElementById('console');
+
+      // Agent output is untrusted — it originates from the sandboxed agent.
+      // Assign through textContent/innerText only; never innerHTML.
+      const append = (text) => { consoleEl.innerText += text; };
 
       document.getElementById('startBtn').addEventListener('click', () => {
         const agent = document.getElementById('agentInput').value;
-        document.getElementById('console').innerText = `Spawning sandbox for ${agent}...\n`;
-        ipcRenderer.send('start-sandbox', agent);
+        consoleEl.innerText = `Spawning sandbox for ${agent}...\n`;
+        window.stuntdouble.startSandbox(agent);
       });
 
-      ipcRenderer.on('sandbox-output', (event, arg) => {
-        document.getElementById('console').innerText += arg;
-      });
-
-      ipcRenderer.on('sandbox-status', (event, arg) => {
-        document.getElementById('console').innerText += `\n${arg.output}\n`;
-      });
+      window.stuntdouble.onOutput(append);
+      window.stuntdouble.onStatus((status) => append(`\n${status.output}\n`));
     </script>
   </body>
 </html>

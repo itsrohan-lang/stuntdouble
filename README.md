@@ -28,17 +28,16 @@ Read this before relying on StuntDouble for anything.
 | Zero-Trust API Credentials | dummy key substitution proxy (`ZeroTrustProxy`) on host egress |
 | Indirect Prompt Injection Guard | adversarial prompt vector detector & sanitizer via `sd guard prompt` |
 | Enterprise AI Data Loss Prevention | PII & secret inspection scanner via `sd dlp scan` |
-| Tamper-Evident Audit Ledger | HMAC-SHA256 signature chain verification via `/api/audit/verify` |
 | Synthetic Offline Mocking | auto-generate synthetic DB & API mocks via `sd mock` |
 | CI/CD Security & Red-Teaming | `sd verify` security gate & `sd swarm --redteam` adversarial node |
-| Native OS Interceptors | macOS EndpointSecurity (`mac/`) & Windows WFP (`windows/`) socket filters |
 | Run history | local JSON counter, control plane + dashboard |
 
 **What does not work:**
 
-- **Linux network egress filtering is not active without cgroup v2.** `cli/pkg/ebpf.AttachInterceptor` requires cgroup v2 attached on Linux. `sd run` requires `--allow-unenforced-network` to proceed when egress filters are unavailable.
-- **Policies are advisory on unmonitored systems.** `blocked_ports`, `strict_egress` and allow/deny lists are distributed to CLI instances and displayed; native kernel drivers enforce them where installed.
-- **Audit logs are self-reported.** The control plane records what a CLI instance tells it. A compromised client can report whatever it likes.
+- **Network egress filtering is not implemented on any platform.** `cli/pkg/ebpf.AttachInterceptor` returns `ErrUnsupported` on Linux, macOS and Windows alike. The BPF program in `cli/pkg/ebpf/bpf_prog.c` is marked `// +build ignore` and no build step compiles it. `sd run` requires `--allow-unenforced-network` to proceed, which is how you acknowledge this.
+- **There are no native OS interceptors.** The macOS EndpointSecurity (`mac/`) and Windows WFP (`windows/`) backends were claimed by earlier versions but have never been built, signed or shipped. Both loaders return `ErrUnsupported`.
+- **Policies are advisory everywhere.** `blocked_ports`, `strict_egress` and allow/deny lists are parsed, distributed and displayed — but no code path applies them to a connection.
+- **The audit ledger is only tamper-evident against direct database edits.** `/api/audit/verify` checks an HMAC-SHA256 chain, but the signing key is `STUNTDOUBLE_TOKEN` — the same bearer token every CLI client must hold to write logs. Any authorized client can therefore forge a valid chain. It detects someone editing `stuntdouble_audit.db` behind the server's back; it does not detect a client that lies.
 - **`sd record` runs Keploy privileged** with `--pid=host` and `--net=host`. That is a broad grant on your host.
 
 See [docs/ENFORCEMENT.md](./docs/ENFORCEMENT.md) for the full boundary and the plan to close it.
@@ -128,10 +127,10 @@ egress filtering described above.
 | `cli/` | Go CLI — working core with ZeroTrustProxy, checkpointing & guardrails |
 | `control-plane/` | Go telemetry + policy service |
 | `dashboard/`, `docs/` | Next.js dashboard and site |
-| `cli/pkg/ebpf/` | Linux egress filter — cgroup v2 interceptor |
-| `core-ebpf/` | Rust eBPF engine placeholder |
-| `charts/`, `k8s-operator/`, `terraform-provider-stuntdouble/` | Hardened Kubernetes Helm chart, CRD reconciler & Terraform provider |
-| `mac/`, `windows/` | macOS EndpointSecurity interceptor & Windows WFP driver |
+| `cli/pkg/ebpf/` | Stub — every backend returns `ErrUnsupported`; the BPF program is not compiled |
+| `core-ebpf/` | Rust eBPF engine placeholder — never built or run |
+| `charts/`, `k8s-operator/`, `terraform-provider-stuntdouble/` | Helm chart, CRD reconciler & Terraform provider — **the chart grants host privileges for the unimplemented eBPF engine; read `charts/stuntdouble/values.yaml` before deploying** |
+| `mac/`, `windows/` | Unbuilt sources for a macOS EndpointSecurity interceptor & Windows WFP driver |
 | `stuntos/`, `wasm/` | WASM policy evaluator & exploratory stubs |
 
 ## 🤝 Contributing

@@ -47,6 +47,10 @@ stuntdouble-*
 .stuntdouble.telemetry.json
 .stuntdouble/
 k8s-operator/bin/
+
+# wasm build artifacts — wasm_exec.js is copied from Go stdlib by build.sh
+wasm/wasm_exec.js
+
 # Native interceptors
 mac/esf_interceptor
 windows/wfp_interceptor.exe

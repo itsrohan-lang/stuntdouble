@@ -67,10 +67,20 @@ file as documentation of what you would like to be true.
 
 ### Audit integrity
 
-The control plane's SQLite audit log contains what CLI instances POST to it. There is no
-signing, no append-only guarantee, and no server-side corroboration. A client that lies is
-believed. It is useful for "what did I run last Tuesday", not for "prove the agent did not
-do X".
+The control plane's SQLite audit log contains what CLI instances POST to it. Entries are
+chained with an HMAC-SHA256 signature over the previous entry's hash, and
+`GET /api/audit/verify` recomputes the chain and reports `tampered_records`. That is a real
+guarantee against one specific adversary: someone who edits `stuntdouble_audit.db` directly,
+behind the server's back, without holding the token.
+
+It is not a guarantee against a client. The HMAC key is `STUNTDOUBLE_TOKEN` — the same shared
+bearer token every CLI instance must present in order to write logs at all. Any party
+authorized to append is therefore also able to forge a chain that verifies. There is still no
+server-side corroboration of the *content* of an entry, so **a client that lies is believed**.
+
+Useful for "what did I run last Tuesday" and for detecting database-level tampering. Not
+useful for "prove the agent did not do X". Closing this needs a server-held signing key
+distinct from the client credential.
 
 ### Credentials
 
@@ -88,10 +98,32 @@ a broad grant on your machine. It is opt-in and separate from `sd run`; do not t
 
 ### The Helm chart
 
-`charts/stuntdouble/templates/daemonset.yaml` requests `privileged: true`, `hostPID`,
-`hostNetwork`, a writable `/sys/fs/cgroup`, and a `docker.sock` hostPath mount. Those
-permissions were provisioned for the eBPF engine that does not exist, so today they buy
-nothing and grant node-root. **Do not deploy the chart as-is.**
+This section previously described the chart as requesting `privileged: true`, `hostPID` and a
+writable `/sys/fs/cgroup`. That is no longer accurate — the chart now sets `privileged: false`,
+`hostPID: false`, `allowPrivilegeEscalation: false`, drops `ALL` capabilities, and mounts both
+hostPaths `readOnly`.
+
+What it still requests, in `charts/stuntdouble/templates/daemonset.yaml`:
+
+| Grant | Why it is there | What it actually buys |
+| --- | --- | --- |
+| `hostNetwork: true` | eBPF attach to the host netns | Nothing; also exposes the host's network namespace |
+| `CAP_BPF`, `CAP_PERFMON` | Load the BPF program | Nothing — no program is compiled or loaded |
+| `CAP_NET_ADMIN`, `CAP_SYS_RESOURCE` | Attach the cgroup hook, raise memlock | Nothing |
+| hostPath `/sys/fs/cgroup` | Resolve the cgroup v2 path to attach to | Nothing |
+| hostPath `/var/run/docker.sock` | Inspect sandbox containers | Full control of the node's Docker daemon |
+
+The last row is the one that matters. `readOnly: true` on a mount restricts operations on the
+inode; it does not stop a process from connecting to the socket and issuing Docker API calls.
+Anything that can reach `docker.sock` can start a privileged container and is therefore
+root on the node — which is the same outcome the old `privileged: true` had, reached by a
+different route.
+
+So the practical advice is unchanged: **do not deploy the chart as-is.** Every grant above was
+provisioned for the eBPF engine that does not exist. Until it does, the honest configuration
+is to remove the `docker.sock` mount, drop `hostNetwork`, and drop all four added
+capabilities — at which point the DaemonSet has nothing left to do. `image.tag` is also pinned
+to `v3.1.2`, several releases behind.
 
 ## Threat model
 

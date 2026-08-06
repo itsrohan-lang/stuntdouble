@@ -55,6 +55,13 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      # Sync package.json version to the git tag (v3.5.0 -> 3.5.0). Without
+      # this the version must be manually bumped in two places before each
+      # release — once in the git tag and again in package.json.
+      - name: Sync npm version to git tag
+        working-directory: ./npm
+        run: npm version --no-git-tag-version "${GITHUB_REF_NAME#v}"
+
       - name: Publish CLI Wrapper to NPM
         working-directory: ./npm
         run: npm publish --access public

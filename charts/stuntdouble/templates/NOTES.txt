@@ -1,0 +1,52 @@
+StuntDouble DaemonSet "{{ .Values.daemonset.name }}" installed into namespace {{ .Values.daemonset.namespace }}.
+
+{{ if .Values.hostAccess.enabled }}
+################################################################################
+#  WARNING — host access is ENABLED and this grants root on every node
+################################################################################
+
+You set hostAccess.enabled=true. Each node now runs a pod with:
+
+  - {{ .Values.hostAccess.dockerSocket }} mounted from the host
+{{- if .Values.hostAccess.hostNetwork }}
+  - the host network namespace (hostNetwork: true)
+{{- end }}
+  - added capabilities: {{ join ", " .Values.securityContext.capabilities.add }}
+
+Anything that can reach the Docker socket can start a privileged container and
+is therefore root on that node. Mounting it readOnly does not prevent this —
+the flag restricts operations on the socket inode, not Docker API calls made
+over it.
+
+These permissions were provisioned for an eBPF egress-filtering engine that is
+NOT IMPLEMENTED. cli/pkg/ebpf.AttachInterceptor returns ErrUnsupported on every
+platform and the BPF program is never compiled. You are paying node-root for
+zero enforcement.
+
+Unless you are actively developing that engine, roll this back:
+
+  helm upgrade {{ .Release.Name }} . --set hostAccess.enabled=false
+
+{{- else }}
+Host access is disabled (the default), so this DaemonSet has no host mounts, no
+host namespaces and no added capabilities.
+
+Be aware of what that means: StuntDouble's network egress filtering is not
+implemented on any platform, so this DaemonSet does not enforce network policy
+either way. Enabling hostAccess would not change that — it would only grant the
+permissions the unimplemented engine was going to need, including a Docker
+socket mount that is equivalent to root on every node.
+
+{{- end }}
+
+Before relying on this chart for anything, read:
+
+  https://github.com/itsrohan-lang/stuntdouble/blob/main/docs/ENFORCEMENT.md
+
+It documents precisely what StuntDouble does and does not enforce. The short
+version: the container isolation and git-based rollback are real; the network
+policy layer is not.
+
+Check rollout status:
+
+  kubectl -n {{ .Values.daemonset.namespace }} rollout status ds/{{ .Values.daemonset.name }}

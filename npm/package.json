@@ -13,7 +13,8 @@
   "files": [
     "bin/stuntdouble.js",
     "scripts/postinstall.js",
-    "scripts/download.js"
+    "scripts/download.js",
+    "README.md"
   ],
   "engines": {
     "node": ">=14"
