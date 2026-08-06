@@ -57,10 +57,17 @@ jobs:
 
       # Sync package.json version to the git tag (v3.5.0 -> 3.5.0). Without
       # this the version must be manually bumped in two places before each
-      # release — once in the git tag and again in package.json.
+      # release — once in the git tag and again in package.json. Skip when the
+      # version was already bumped in-tree: `npm version` exits non-zero on a
+      # no-op, and the publish step below reads the manifest version directly.
       - name: Sync npm version to git tag
         working-directory: ./npm
-        run: npm version --no-git-tag-version "${GITHUB_REF_NAME#v}"
+        run: |
+          CURRENT="$(node -p "require('./package.json').version")"
+          TARGET="${GITHUB_REF_NAME#v}"
+          if [ "$CURRENT" != "$TARGET" ]; then
+            npm version --no-git-tag-version "$TARGET"
+          fi
 
       - name: Publish CLI Wrapper to NPM
         working-directory: ./npm
