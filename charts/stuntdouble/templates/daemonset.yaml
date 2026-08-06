@@ -15,7 +15,9 @@ spec:
         app: stuntdouble
     spec:
       hostPID: false
+      {{- if and .Values.hostAccess.enabled .Values.hostAccess.hostNetwork }}
       hostNetwork: true
+      {{- end }}
       containers:
       - name: stuntdouble
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -23,24 +25,33 @@ spec:
         securityContext:
           privileged: {{ .Values.securityContext.privileged }}
           allowPrivilegeEscalation: false
+          runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
           capabilities:
             drop:
               - ALL
+            {{- if .Values.hostAccess.enabled }}
             add:
 {{ toYaml .Values.securityContext.capabilities.add | indent 14 }}
+            {{- end }}
+        {{- if .Values.hostAccess.enabled }}
         volumeMounts:
         - name: sys-fs-cgroup
           mountPath: /sys/fs/cgroup
           readOnly: true
+        # readOnly does not prevent Docker API calls over this socket; it is
+        # set for defence in depth only. See values.yaml.
         - name: docker-sock
           mountPath: /var/run/docker.sock
           readOnly: true
+        {{- end }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}
+      {{- if .Values.hostAccess.enabled }}
       volumes:
       - name: sys-fs-cgroup
         hostPath:
-          path: /sys/fs/cgroup
+          path: {{ .Values.hostAccess.cgroupPath }}
       - name: docker-sock
         hostPath:
-          path: /var/run/docker.sock
+          path: {{ .Values.hostAccess.dockerSocket }}
+      {{- end }}

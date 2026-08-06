@@ -2,5 +2,7 @@ apiVersion: v2
 name: stuntdouble
 description: A Helm chart for deploying StuntDouble AI sandboxing DaemonSet across a Kubernetes cluster
 type: application
-version: 1.0.0
-appVersion: "3.1.2"
+# 2.0.0: host namespaces, hostPath mounts and added capabilities are now opt-in
+# via hostAccess.enabled (default false). Previously granted unconditionally.
+version: 2.0.0
+appVersion: "3.6.0"
