@@ -21,6 +21,7 @@ dist/
 
 # Go / provider build artifacts
 terraform-provider-stuntdouble/terraform-provider-stuntdouble
+terraform-provider-stuntdouble/bin/
 
 # Config files (for testing)
 .stuntdouble.yaml
@@ -37,10 +38,19 @@ stuntdouble-*
 /control-plane/control-plane
 /core-ebpf/target/
 
+# npm wrapper core binary — downloaded per-platform by npm/scripts/postinstall.js,
+# never committed (a single binary can only ever match one platform).
+/npm/bin/sd
+/npm/bin/sd.exe
+
 # StuntDouble Local State
 .stuntdouble.telemetry.json
 .stuntdouble/
 k8s-operator/bin/
+
+# wasm build artifacts — wasm_exec.js is copied from Go stdlib by build.sh
+wasm/wasm_exec.js
+
 # Native interceptors
 mac/esf_interceptor
 windows/wfp_interceptor.exe
